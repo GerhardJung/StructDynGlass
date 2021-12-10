@@ -1,9 +1,34 @@
+#ifndef DEFS_H
+#define DEFS_H
+
+// libraries
+#include <iostream>
+ 
+#include <QTextStream>
+#include <QFile>
+#include <QDir>
+#include <QDebug>
+#include <QString>
 
 // OPTIONS
-std::string lammpsIn;       // lammps xyz output file for readin
-std::string xyzOut;         // extended xyz file to output isoconfigurational data
-int CnfStart, CnfStep;      // to open output files
-int NS;                     // number of different inital structures
-int NI;                     // number of different isoconfigurational trajectories
-int NDyn;                   // number of dynamical observables to be analyzed
-int bb_flag;                // flags for dynamical observables
+extern std::string lammpsIn;       // lammps xyz output file for readin
+extern std::string xyzOut;         // extended xyz file to output isoconfigurational data
+extern int CnfStart, CnfStep;      // to open output files
+extern int NS;                     // number of different inital structures
+extern int NI;                     // number of different isoconfigurational trajectories
+extern int NDyn;                   // number of dynamical observables to be analyzed
+extern int bb_flag;                // flags for dynamical observables
+
+// DATA
+extern int N;                      // number of particles
+extern double boxL;                // box size
+extern int dim;                    // number of dimensions
+extern int NT;                     // number of timesteps
+extern int * type_data;
+extern double ** xyz_data;
+extern int * time_data;
+
+// Functions
+void allocate_storage();
+
+#endif

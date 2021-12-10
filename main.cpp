@@ -1,10 +1,4 @@
- 
-#include <QTextStream>
-#include <QFile>
-#include <QDir>
-#include <QDebug>
-#include <QString>
-#include <iostream>
+
 
 #include "read_lammps.h" 
 #include "defs.h"
@@ -19,12 +13,11 @@
     QTextStream infileStream(&infile);
     
     // read input file
-    QString line;
     const QRegExp rxInt(QLatin1String("[^0-9]+"));
     const QRegExp rxString(QLatin1String("[^A-Z0-9]+"));
     int line_counter = 0;
     while (!infileStream.atEnd()){
-        line = infileStream.readLine();
+        QString line = infileStream.readLine();
         if( line.at( 0 ) == '#' ) continue;
         switch (line_counter) {
             case 0 :
@@ -71,5 +64,9 @@
     std::cout << "NS/NI: " << NS << " " << NI << std::endl;
     std::cout << "EVALUATE " << NDyn << " dynamical observables:" << std::endl;
     if (bb_flag==1) std::cout << "    Bond-Breaking" << std::endl;
+
+
+    // read files and save data
+    read_files_lammps();
 
  }

@@ -1,0 +1,10 @@
+# Root Folder for simulation data
+/home/zeus/gjung/Documents/machine_learning_montpellier/montpellier_cluster/simulations_intro/KA2_model/md_isoconf/T0.509
+# Root Folder for evaluation
+/home/zeus/gjung/Documents/machine_learning_montpellier/montpellier_cluster/simulations_intro/KA2_model/md_isoconf/T0.509_eval
+# Cnf Start and Step
+2000000 2000000
+# N_S N_I
+1 20
+# Dynamical observable (BB = bond-breaking)
+1 BB
