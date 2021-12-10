@@ -71,5 +71,5 @@
     std::cout << "NS/NI: " << NS << " " << NI << std::endl;
     std::cout << "EVALUATE " << NDyn << " dynamical observables:" << std::endl;
     if (bb_flag==1) std::cout << "    Bond-Breaking" << std::endl;
-    
+
  }
