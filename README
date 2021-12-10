@@ -1,0 +1,22 @@
+INPUT:
+
+- The input for this program are N_S x N_i lammps-xyz files (example files, see folder "data")
+-> N_S: number of different initial structures
+-> N_i: number of different isoconfigurational trajactories per structures
+-> It is assumed that the length and waiting times of all files are identical
+
+DATA EVALUATION (isoconfigurational average):
+
+- From the isoconfigurational trajectories the following evaluation steps can be performed:
+-> Calculate the isoconfigurational average for various dynamical variables 
+-> Calculate (time-dependent) predictabilities of the isoconfigurational ensemble for these dynamical variables
+-> Print extended xyz files, including initial structures and isoconfigurational averages 
+
+
+DATA EVALUATION (structure):
+
+- Functions to calculate structural properties and create batches for machine learning
+-> Read these extended xyz files 
+-> Calculate various particle properties in the initial structure
+-> Print extended xyz files with particle properties
+-> Create batches for machine learning
