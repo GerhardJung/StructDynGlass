@@ -91,6 +91,6 @@ void read_files_lammps(){
     }
 
     for (int k=0; k<NT; k++) {
-        std::cout <<  time_data[k] << " " <<  xyz_data[5+0*N][dim*k+dim*NT*dim] << std::endl;
+        //std::cout <<  time_data[k] << " " <<  xyz_data[5+0*N][dim*k+dim*NT*dim] << std::endl;
     }
 }

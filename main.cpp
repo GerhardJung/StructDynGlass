@@ -1,7 +1,8 @@
 
 
-#include "read_lammps.h" 
 #include "defs.h"
+#include "read_write_lammps.h" 
+#include "dyn_bb.h" 
  
  int main() {
    
@@ -14,7 +15,7 @@
     
     // read input file
     const QRegExp rxInt(QLatin1String("[^0-9]+"));
-    const QRegExp rxString(QLatin1String("[^A-Z0-9]+"));
+    const QRegExp rxString(QLatin1String("[^A-Z0-9.]+"));
     int line_counter = 0;
     while (!infileStream.atEnd()){
         QString line = infileStream.readLine();
@@ -27,15 +28,17 @@
                 xyzOut = line.toStdString();
                 break;
             case 2 : {
-                 const auto&& parts = line.split(rxInt, QString::SkipEmptyParts);
+                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                  CnfStart = parts[0].toInt();
                  CnfStep = parts[1].toInt();
+                 timestep = parts[2].toDouble();
                  break;
             }
             case 3 : {
                  const auto&& parts = line.split(rxInt, QString::SkipEmptyParts);
                  NS = parts[0].toInt();
                  NI = parts[1].toInt();
+                 NHisto = parts[2].toInt();
                  break;
             }
             case 4: {
@@ -60,13 +63,17 @@
     std::cout << "Options:" << std::endl;
     std::cout << "LAMMPS XYZ IN: " << lammpsIn << std::endl;
     std::cout << "EXTENDED XYZ OUT (DYN): " << xyzOut << std::endl;
-    std::cout << "CnfStart/CnfStep: " << CnfStart << " " << CnfStep << std::endl;
-    std::cout << "NS/NI: " << NS << " " << NI << std::endl;
+    std::cout << "CnfStart/CnfStep/timestep: " << CnfStart << " " << CnfStep << " " << timestep << std::endl;
+    std::cout << "NS/NI/NHisto: " << NS << " " << NI << " " << NHisto << std::endl;
     std::cout << "EVALUATE " << NDyn << " dynamical observables:" << std::endl;
     if (bb_flag==1) std::cout << "    Bond-Breaking" << std::endl;
 
 
-    // read files and save data
+    // read files
     read_files_lammps();
+
+
+    // calculate isoconfigurational averages and predictabilities
+    if (bb_flag) eval_bb();
 
  }
