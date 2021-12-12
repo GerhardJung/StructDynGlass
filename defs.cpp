@@ -1,5 +1,4 @@
 #include "defs.h"
-#include "nrutil.h"
 
 //OPTIONS
 std::string lammpsIn;       // lammps xyz output file for readin
@@ -10,7 +9,10 @@ int NS;                     // number of different inital structures
 int NI;                     // number of different isoconfigurational trajectories
 int NHisto;
 int NDyn;                   // number of dynamical observables to be analyzed
+
 int bb_flag;                // flags for dynamical observables
+double rcuti2;
+double rcuto2;              //inner and outer cutoff for bond breaking
 
 // DATA
 int N;                      // number of particles
