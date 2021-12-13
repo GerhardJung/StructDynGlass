@@ -13,6 +13,8 @@
 
 #include "nrutil.h"
 
+#define NTYPE 3
+
 // OPTIONS
 extern std::string lammpsIn;       // lammps xyz output file for readin
 extern std::string xyzOut;         // extended xyz file to output isoconfigurational data
@@ -35,10 +37,16 @@ extern int NT;                     // number of timesteps
 extern int * type_data;
 extern double ** xyz_data;
 extern int * time_data;
+extern int * NPerType;
 
 //DYN
-extern double **dyn_data;
+extern double **dyn_hist_data;
+extern double **dyn_pred;
+extern double **dyn_hist_iso;
+extern double **dyn_hist_val;
+
 extern double **dyn_bb_data;
+
 
 // Functions
 void allocate_storage();

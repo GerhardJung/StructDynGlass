@@ -22,9 +22,14 @@ int NT;
 int * type_data;
 double ** xyz_data;
 int * time_data;
+int * NPerType = new int[NTYPE];
 
 // DYN
-double ** dyn_data;
+double ** dyn_hist_data;
+double **dyn_pred;
+double **dyn_hist_iso;
+double **dyn_hist_val;
+
 double ** dyn_bb_data;
 
 void allocate_storage(){
@@ -35,7 +40,11 @@ void allocate_storage(){
     time_data = ivector(0,NT-1);
 
     // allocate dyn data
-    dyn_data = dmatrix(0,N*NS-1,0,NHisto-1);
+    dyn_hist_data = dmatrix(0,N*NS-1,0,NHisto-1);
+    dyn_pred = dmatrix(0,NT-1,0,5*NTYPE-1);
+    dyn_hist_iso = dmatrix(0,NT-1,0,NTYPE*NHisto-1);
+    dyn_hist_val = dmatrix(0,NT-1,0,NTYPE*NHisto-1);
+
     dyn_bb_data = dmatrix(0,N*NS-1,0,NT-1);
 
     // initialize data
@@ -51,8 +60,22 @@ void allocate_storage(){
             dyn_bb_data[i][j] = 0.0;
         }
         for (int j = 0; j < NHisto; j++) {
-            dyn_data[i][j] = 0.0;
+            dyn_hist_data[i][j] = 0.0;
         }
+    }
+
+    for (int t = 0; t < NT; t++) {
+        for (int j = 0; j < NTYPE*NHisto; j++) {
+            dyn_hist_iso[t][j] = 0.0;
+            dyn_hist_val[t][j] = 0.0;
+        }
+        for (int j = 0; j < 5*NTYPE; j++) {
+            dyn_pred[t][j] = 0.0;
+        }
+    }
+
+    for (int j = 0; j < NTYPE; j++) {
+        NPerType[j] = 0;
     }
 
 }

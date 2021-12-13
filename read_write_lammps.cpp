@@ -59,13 +59,13 @@ void read_files_lammps(){
             QTextStream infileStream(&infile);
             //std::cout << pathij.toStdString() << std::endl;
 
-            for (int k=0; k<NT; k++) {
+            for (int t=0; t<NT; t++) {
                 // Skip header   
                 line = infileStream.readLine();
                 //if (j==0) std::cout << line.toStdString() << std::endl;
                 // read time
                 line = infileStream.readLine();
-                time_data[k] = line.toInt();
+                time_data[t] = line.toInt();
 
                 // skip header
                 for (int l=0; l<7; l++) {
@@ -75,12 +75,12 @@ void read_files_lammps(){
                 // read data
                 for (int l=0; l<N; l++) {
                     if (dim == 2) {
-                        infileStream >> type_data[l+i*N] >> xyz_data[l+i*N][dim*k+dim*NT*j] >> xyz_data[l+i*N][1+dim*k+dim*NT*j];
+                        infileStream >> type_data[l+i*N] >> xyz_data[l+i*N][dim*t+dim*NT*j] >> xyz_data[l+i*N][1+dim*t+dim*NT*j];
                     } else {
-                        infileStream >> type_data[l+i*N] >> xyz_data[l+i*N][dim*k+dim*NT*j] >> xyz_data[l+i*N][1+dim*k+dim*NT*j]  >> xyz_data[l+i*N][2+dim*k+dim*NT*j];
+                        infileStream >> type_data[l+i*N] >> xyz_data[l+i*N][dim*t+dim*NT*j] >> xyz_data[l+i*N][1+dim*t+dim*NT*j]  >> xyz_data[l+i*N][2+dim*t+dim*NT*j];
                         //if (j==0 && k==0 && l>1100) std::cout << "type " << type_data[l+i*N]<< std::endl;
                     }
-
+                    if(i==0 && j==0 && t==0) NPerType[type_data[l+i*N]] ++;
                     
                 }
                 line = infileStream.readLine();
@@ -90,7 +90,4 @@ void read_files_lammps(){
         }
     }
 
-    for (int k=0; k<NT; k++) {
-        //std::cout <<  time_data[k] << " " <<  xyz_data[5+0*N][dim*k+dim*NT*dim] << std::endl;
-    }
 }
