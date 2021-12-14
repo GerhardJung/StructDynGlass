@@ -1,13 +1,18 @@
 # Root Folder for simulation data
-#/home/zeus/gjung/Documents/machine_learning_montpellier/montpellier_cluster/simulations_intro/KA2_model/md_isoconf/T0.509
-/home/gerhard/Documents/machine_learning_project/simulations/KA2D_model/md_isoconf_new3/T0.181/
+#/home/zeus/gjung/Documents/machine_learning_montpellier/montpellier_cluster/simulations_intro/KA2D_model/md_isoconf_new3/T0.181
+/home/zeus/gjung/Documents/machine_learning_montpellier/montpellier_cluster/simulations_intro/KA2_model/md_isoconf/T0.509
+#/home/gerhard/Documents/machine_learning_project/simulations/KA2D_model/md_isoconf_new3/T0.181/
 # Root Folder for evaluation
-#/home/zeus/gjung/Documents/machine_learning_montpellier/montpellier_cluster/simulations_intro/KA2_model/md_isoconf/T0.509_eval
-/home/gerhard/Documents/machine_learning_project/simulations/KA2D_model/md_isoconf_new3/T0.181_eval/
+#/home/zeus/gjung/Documents/machine_learning_montpellier/montpellier_cluster/simulations_intro/KA2D_model/md_isoconf_new3/T0.181_eval
+/home/zeus/gjung/Documents/machine_learning_montpellier/montpellier_cluster/simulations_intro/KA2_model/md_isoconf/T0.509_eval
+#/home/gerhard/Documents/machine_learning_project/simulations/KA2D_model/md_isoconf_new3/T0.181_eval/
 # Cnf Start and Step Timestep
-2000000 2000000 0.02
+2000000 2000000 0.01
 # N_S N_I N_Histo
-1 20 10
-# Dynamical observable (BB = bond-breaking)
-1 
-BB 1.3 1.7
+1 20 2
+# Dynamical observable (BB = bond-breaking, EXP = exponential decay (4th power), ISF = Intermediate Scattering Function (q \approx 7.0))
+3
+BB 1.3 1.7 0.0 1.0
+#BB 1.485 1.7 0.0 1.0
+EXP 0.8 0.0 1.0
+ISF 7.0 -1.0 1.0

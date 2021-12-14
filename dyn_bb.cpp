@@ -4,7 +4,7 @@
 #include "pbc.h"
 #include "eval_isoconf.h"
 
-#define N_NEIGH_MAX 15
+#define N_NEIGH_MAX 25
 
 int **neighbors;
 
@@ -25,24 +25,31 @@ void eval_bb(){
     int n0;
     int nt;
     for (int t=1; t<NT; t++) {
-        reset_dyn_hist();
+        std::cout << "EVAL BB " << t << std::endl; 
+        reset_dyn();
 
         for (int s=0; s<NS;s++) { // loop over structures
             for (int i=0; i<N;i++) {
-                checkneighbors(s, i, t, n0, nt);
-                // add to probability distribution
-                add_histogram(s,i,nt/((double) n0));
+                for (int j=0; j<NI;j++) {
+                    checkneighbors(s, i,j, t, n0, nt);
+                    // add to probability distribution and averages
+                    double C_loc= nt/((double) n0);
+                    add_histogram_avg(s,i,bb_hist_lower,bb_hist_upper,C_loc);
+                    //if (t==1 && C_loc <1) std::cout << s << " "<< i << " " << C_loc << std::endl;
+                }
             }
         }
 
         // the main evaluation for the isoconfigurational ensemble
-        eval_isoconf(t);
+        eval_isoconf(t, "BB");
 
         // write results
+        print_isoconf("BB");
 
     }
 
     // print results
+    print_xyz_isoconf("BB");
 
     free_imatrix(neighbors,0,NS*N-1,0,N_NEIGH_MAX-1);
 }
@@ -68,18 +75,20 @@ void findneighbors() {
                     ncount ++;
                 }
             }
+            //if (s==0 && i == 264) std::cout << ncount << std::endl;
         }
     }
 }
 
-void checkneighbors(int s, int i, int t, int &n0, int &nt) {
+void checkneighbors(int s, int i, int j, int t, int &n0, int &nt) {
     double dr, dx;
     n0 = 0;
     nt = 0;
     while (neighbors[i+s*N][n0] != -1 ) {
+        //if(n0>17) std::cout << neighbors[i+s*N][n0] << std::endl;
         dr = 0;
         for (int d=0; d<dim;d++) {
-            dx = xyz_data[i+s*N][d+t*dim] - xyz_data[neighbors[i+s*N][n0]+s*N][d+t*dim];
+            dx = xyz_data[i+s*N][d+t*dim+dim*NT*j] - xyz_data[neighbors[i+s*N][n0]+s*N][d+t*dim+dim*NT*j];
             apply_pbc(dx);
             dr += dx*dx;
         }

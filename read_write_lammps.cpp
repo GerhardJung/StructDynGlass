@@ -80,6 +80,7 @@ void read_files_lammps(){
                         infileStream >> type_data[l+i*N] >> xyz_data[l+i*N][dim*t+dim*NT*j] >> xyz_data[l+i*N][1+dim*t+dim*NT*j]  >> xyz_data[l+i*N][2+dim*t+dim*NT*j];
                         //if (j==0 && k==0 && l>1100) std::cout << "type " << type_data[l+i*N]<< std::endl;
                     }
+                    type_data[l+i*N] --;
                     if(i==0 && j==0 && t==0) NPerType[type_data[l+i*N]] ++;
                     
                 }
@@ -89,5 +90,49 @@ void read_files_lammps(){
             infile.close();
         }
     }
+    std::cout << "NPerType ";
+    for (int type=0;type< NTYPE; type++) {
+        std::cout << type << ": " <<  NPerType[type] << " ";
+    }
+    std::cout << std::endl;
+
+    // calculate q value for ISF
+    double qmin = 2*M_PI/boxL;
+    double Nqmin = qisf / qmin;
+    int Nqmin_int = Nqmin + 0.5;
+    double qisf = Nqmin_int*qmin;
+    std::cout << "UPDATED: qisf to fit into box. New value " << qisf << std::endl;
+
+    /*for (int l=0; l<N; l++) {
+        std::cout << type_data[l+0*N] << std::endl;
+    }*/
+
+}
+
+
+// print extended xyz file to visualized isoconfigurational average
+void print_xyz_isoconf(std::string dyn){
+    QString pathOrig = QString::fromStdString(folderOut);
+
+    // print predictabilities
+    int s=0;
+    QString pathPred = pathOrig;
+    pathPred.append(QString("/isoconf_%1.xyz").arg(QString::fromStdString(dyn)));
+    QFile outfilePred(pathPred);   // input file with xyz
+    outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream outPred(&outfilePred);
+    for (int t=1; t<NT; t++) {
+        outPred << N << "\n";
+        outPred << "Properties=species:I:1:pos:R:" << dim << ":" << QString::fromStdString(dyn) << ":R:1 time " << time_data[t]*timestep << "\n";
+        for (int i = 0; i < N; i++) {
+            if (dim == 2) {
+                outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " ";
+            } else {
+                outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " " << xyz_data[i+s*N][2] << " ";
+            }
+            if(dyn=="BB") outPred << dyn_bb_avg[i+s*N][t] << "\n";
+        }
+    }
+    outfilePred.close();
 
 }
