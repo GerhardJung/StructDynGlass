@@ -18,18 +18,19 @@ void read_files_lammps(){
     const QRegExp rxString(QLatin1String("[^A-Z0-9]+"));
     while (!infileStream.atEnd()){
         Nloc++;
-        if (!(Nloc==6) && !(Nloc==8)) line = infileStream.readLine();
+        if (!(Nloc==7) && !(Nloc==9)) line = infileStream.readLine();
 
         if (Nloc==4) N = line.toInt();  // particle number
-        if (Nloc==6) {
+        if (Nloc==7) {
             double dummy1, dummy2;
             infileStream >> dummy1 >> dummy2;
             boxL = 2.0*dummy2;
         }
-        if (Nloc==8) {
+        if (Nloc==9) {
             double dummy1, dummy2;
             infileStream >> dummy1 >> dummy2;
             double boxLz = 2.0*dummy2;
+            std::cout << boxL << " " << boxLz << std::endl;
             if (boxLz > 1.0) dim = 3;
             else dim=2;
         }
