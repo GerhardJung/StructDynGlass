@@ -6,6 +6,7 @@
 #include "dyn_bb.h" 
 #include "dyn_exp.h" 
 #include "dyn_isf.h" 
+#include "struct_base.h" 
  
  int main() {
    
@@ -46,7 +47,6 @@
                  break;
             }
             case 4: {
-                const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 NDyn = line.toInt();
                 break;
             }
@@ -77,12 +77,17 @@
                 Ndyn_loc ++;
                 break;
             }
+            case 6: {
+                NStruct = line.toInt();
+                break;
+            }
         }
         line_counter++;
         if (line_counter == 6) {
             // jump back if there are still more dyn variables to come
             if (Ndyn_loc < NDyn) line_counter--;
         }
+        
     }
 
     // write options
@@ -107,4 +112,6 @@
     if (exp_flag) eval_exp();
     if (isf_flag) eval_isf();
 
+    // calculate statical properties
+    if (struct_base_flag) eval_struct_base();
  }

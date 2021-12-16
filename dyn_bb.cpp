@@ -48,8 +48,8 @@ void eval_bb(){
 
     }
 
-    // print results
-    print_xyz_isoconf("BB");
+    // print results (later, when strcture is evaluated)
+    // print_xyz_isoconf("BB");
 
     free_imatrix(neighbors,0,NS*N-1,0,N_NEIGH_MAX-1);
 }

@@ -42,6 +42,10 @@ extern double qisf;                // length scale for isf
 extern double isf_hist_lower;
 extern double isf_hist_upper;
 
+extern int NStruct;          // number of strctural observables to be analyzed
+
+extern int struct_base_flag;       // flag for the very basic structural descriptors
+
 // DATA
 extern int N;                      // number of particles
 extern double boxL;                // box size

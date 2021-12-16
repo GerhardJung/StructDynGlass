@@ -48,7 +48,7 @@ void eval_isoconf(int t, std::string dyn){
     // print per particle histo
     // print histograms
     //if (t==13) {
-        QString pathHisto =  QString::fromStdString(folderOut);
+    /*    QString pathHisto =  QString::fromStdString(folderOut);
         pathHisto.append(QString("/isoconf_check_%1_t%2.dat").arg(QString::fromStdString(dyn)).arg(t));
         QFile outfileHisto(pathHisto);   // input file with xyz
         outfileHisto.open(QIODevice::WriteOnly | QIODevice::Text);
@@ -62,7 +62,7 @@ void eval_isoconf(int t, std::string dyn){
         }
             
         
-        outfileHisto.close();
+        outfileHisto.close();*/
     //}
 
     // eval Ciso and variances

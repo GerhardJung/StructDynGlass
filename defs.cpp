@@ -26,6 +26,10 @@ double qisf;                // length scale for isf
 double isf_hist_lower;
 double isf_hist_upper;
 
+int NStruct;          // number of strctural observables to be analyzed
+
+int struct_base_flag=0;       // flag for the very basic structural descriptors
+
 // DATA
 int N;                      // number of particles
 double boxL;
