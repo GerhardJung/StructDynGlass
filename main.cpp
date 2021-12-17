@@ -21,7 +21,7 @@
     const QRegExp rxInt(QLatin1String("[^0-9]+"));
     const QRegExp rxString(QLatin1String("[^A-Z0-9.-]+"));
     int line_counter = 0;
-    int Ndyn_loc=0;
+    int Ndyn_loc=0, Nstruct_loc=0;
     while (!infileStream.atEnd()){
         QString line = infileStream.readLine();
         if( line.at( 0 ) == '#' ) continue;
@@ -81,11 +81,26 @@
                 NStruct = line.toInt();
                 break;
             }
+            case 7: {
+                const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
+                if (parts[0] == "BASE") {
+                    struct_base_flag = 1;
+                    NHistoGr = parts[1].toInt();
+                }     
+
+
+                Nstruct_loc ++;
+                break;
+            }
         }
         line_counter++;
         if (line_counter == 6) {
             // jump back if there are still more dyn variables to come
             if (Ndyn_loc < NDyn) line_counter--;
+        }
+        if (line_counter == 8) {
+            // jump back if there are still more dyn variables to come
+            if (Nstruct_loc < NStruct) line_counter--;
         }
         
     }

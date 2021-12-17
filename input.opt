@@ -10,9 +10,12 @@
 2000000 2000000 0.01
 # N_S N_I N_Histo
 1 20 2
-# Dynamical observable (BB = bond-breaking, EXP = exponential decay (4th power), ISF = Intermediate Scattering Function (q \approx 7.0))
+# Dynamical observables (BB = bond-breaking, EXP = exponential decay (4th power), ISF = Intermediate Scattering Function (q \approx 7.0))
 3
 BB 1.3 1.7 0.0 1.0
 #BB 1.485 1.7 0.0 1.0
 EXP 0.8 0.0 1.0
 ISF 7.0 -1.0 1.0
+# Structual observables (BASE = several different standard variables, i.e. g(r), \psi_5/6, density, theta etc. )
+1
+BASE 200

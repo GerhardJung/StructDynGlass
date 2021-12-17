@@ -29,6 +29,7 @@ double isf_hist_upper;
 int NStruct;          // number of strctural observables to be analyzed
 
 int struct_base_flag=0;       // flag for the very basic structural descriptors
+int NHistoGr;
 
 // DATA
 int N;                      // number of particles
@@ -52,6 +53,18 @@ double ** dyn_bb_avg;
 double ** dyn_exp_avg;
 double ** dyn_isf_avg;
 
+//STRCUT
+double **struct_base_gr;
+double **struct_base_theta5;
+double **struct_base_theta6;
+double **struct_base_rad_classifier;
+double **struct_base_ang_classifier;
+double **struct_base_local_den;
+double **struct_base_local_epot;
+double **struct_base_local_theta;
+double **struct_base_local_psi5;
+double **struct_base_local_psi6;
+
 void allocate_storage(){
 
     // allocate type and xyz data
@@ -70,6 +83,9 @@ void allocate_storage(){
     dyn_bb_avg = dmatrix(0,N*NS-1,0,NT-1);
     dyn_exp_avg = dmatrix(0,N*NS-1,0,NT-1);
     dyn_isf_avg = dmatrix(0,N*NS-1,0,dim*NT-1);
+
+    // allocate strcut data
+    struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
 
     // initialize data
     for (int i = 0; i < NS*N; i++) {
