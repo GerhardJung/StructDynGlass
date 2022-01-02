@@ -30,6 +30,8 @@ int NStruct;          // number of strctural observables to be analyzed
 
 int struct_base_flag=0;       // flag for the very basic structural descriptors
 int NHistoGr;
+double rcut2;            // cutoff for neighbor search
+int bo_Nneigh;    // how many neighbors are considered for bo average
 
 // DATA
 int N;                      // number of particles
@@ -53,17 +55,16 @@ double ** dyn_bb_avg;
 double ** dyn_exp_avg;
 double ** dyn_isf_avg;
 
-//STRCUT
+//STRUCT
 double **struct_base_gr;
-double **struct_base_theta5;
-double **struct_base_theta6;
+
 double **struct_base_rad_classifier;
 double **struct_base_ang_classifier;
 double **struct_base_local_den;
 double **struct_base_local_epot;
-double **struct_base_local_theta;
-double **struct_base_local_psi5;
-double **struct_base_local_psi6;
+double **struct_base_local_theta_tanaka;
+double **struct_base_local_psi;
+double **struct_base_local_bo;
 
 void allocate_storage(){
 
@@ -87,6 +88,12 @@ void allocate_storage(){
     // allocate strcut data
     struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
 
+    struct_base_local_psi = dmatrix(0,N*NS-1,0,2*NCG-1);
+    //struct_base_local_bo = dmatrix(0,N*NS-1,0,2-1);
+    struct_base_local_theta_tanaka = dmatrix(0,N*NS-1,0,NCG-1);
+    struct_base_local_epot = dmatrix(0,N*NS-1,0,NCG-1);
+    struct_base_local_den = dmatrix(0,N*NS-1,0,NCG-1);
+
     // initialize data
     for (int i = 0; i < NS*N; i++) {
         type_data[i] = 0;
@@ -106,6 +113,19 @@ void allocate_storage(){
         for (int j = 0; j < NHisto; j++) {
             dyn_hist_data[i][j] = 0.0;
         }
+
+        for (int j = 0; j < NCG; j++) {
+            struct_base_local_psi[i][2*j] = 0.0;
+            struct_base_local_psi[i][2*j+1] = 0.0;
+            //struct_base_local_bo[i][0] = 0.0;
+            struct_base_local_theta_tanaka[i][j] = 0.0;
+            struct_base_local_epot[i][j] = 0.0;
+            struct_base_local_den[i][j] = 0.0;
+
+        }
+
+        
+
     }
 
     for (int t = 0; t < NT; t++) {
@@ -120,6 +140,14 @@ void allocate_storage(){
 
     for (int j = 0; j < NTYPE; j++) {
         NPerType[j] = 0;
+    }
+
+    for (int i = 0; i < NTYPE; i++) {
+        for (int j = 0; j <= NTYPE; j++) {
+            for (int k=0; k<NHistoGr; k++) {
+                struct_base_gr[i*NTYPE+j][k]=0.0;
+            }
+        }
     }
 
 }

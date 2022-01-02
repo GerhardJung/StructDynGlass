@@ -51,6 +51,12 @@
                 break;
             }
             case 5: {
+
+                if (NDyn == 0) {
+                    line_counter++;
+                    break;
+                }
+
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BB") {
                     bb_flag = 1;
@@ -58,15 +64,13 @@
                     rcuto2 = parts[2].toDouble()*parts[2].toDouble();
                     bb_hist_lower = parts[3].toDouble();
                     bb_hist_upper = parts[4].toDouble();
-                }     
-                if (parts[0] == "EXP") {
+                } else if (parts[0] == "EXP") {
                     exp_flag = 1;
                     exp_scale4i = parts[1].toDouble();
                     exp_scale4i = 1.0/(exp_scale4i*exp_scale4i*exp_scale4i*exp_scale4i);
                     exp_hist_lower = parts[2].toDouble();
                     exp_hist_upper = parts[3].toDouble();
-                }       
-                if (parts[0] == "ISF") {
+                }  else if (parts[0] == "ISF") {
                     isf_flag = 1;
                     qisf = parts[1].toDouble();
                     isf_hist_lower = parts[2].toDouble();
@@ -86,6 +90,8 @@
                 if (parts[0] == "BASE") {
                     struct_base_flag = 1;
                     NHistoGr = parts[1].toInt();
+                    rcut2 = parts[2].toDouble()*parts[2].toDouble();
+                    bo_Nneigh = parts[3].toInt();
                 }     
 
 
@@ -117,6 +123,8 @@
     if (exp_flag==1) std::cout << "    Exponential Decay" << " " << sqrt(sqrt(1.0/exp_scale4i)) << std::endl;
     if (isf_flag==1) std::cout << "    Intermediate Scattering Function" << " " << qisf << std::endl;
 
+    std::cout << "EVALUATE " << Nstruct_loc << " statical descriptors:" << std::endl;
+    if (struct_base_flag==1) std::cout << "    Base" << " " << NHistoGr  << std::endl;
 
     // read files
     read_files_lammps();
@@ -129,4 +137,7 @@
 
     // calculate statical properties
     if (struct_base_flag) eval_struct_base();
+
+    // print xyz
+    print_xyz_isoconf();
  }

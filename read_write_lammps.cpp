@@ -30,7 +30,7 @@ void read_files_lammps(){
             double dummy1, dummy2;
             infileStream >> dummy1 >> dummy2;
             double boxLz = 2.0*dummy2;
-            std::cout << boxL << " " << boxLz << std::endl;
+            //std::cout << boxL << " " << boxLz << std::endl;
             if (boxLz > 1.0) dim = 3;
             else dim=2;
         }
@@ -112,28 +112,35 @@ void read_files_lammps(){
 
 
 // print extended xyz file to visualized isoconfigurational average
-void print_xyz_isoconf(std::string dyn){
+void print_xyz_isoconf(){
     QString pathOrig = QString::fromStdString(folderOut);
 
     // print predictabilities
-    int s=0;
-    QString pathPred = pathOrig;
-    pathPred.append(QString("/isoconf_%1.xyz").arg(QString::fromStdString(dyn)));
-    QFile outfilePred(pathPred);   // input file with xyz
-    outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream outPred(&outfilePred);
-    for (int t=1; t<NT; t++) {
-        outPred << N << "\n";
-        outPred << "Properties=species:I:1:pos:R:" << dim << ":" << QString::fromStdString(dyn) << ":R:1 time " << time_data[t]*timestep << "\n";
-        for (int i = 0; i < N; i++) {
-            if (dim == 2) {
-                outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " ";
-            } else {
-                outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " " << xyz_data[i+s*N][2] << " ";
+    for (int s=0; s<NS; s++) {
+        QString pathPred = pathOrig;
+        pathPred.append(QString("/struct_isoconf_%1.xyz").arg(s));
+        std::cout << pathPred.toStdString() << std::endl;
+        QFile outfilePred(pathPred);   // input file with xyz
+        outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
+        QTextStream outPred(&outfilePred);
+        for (int t=1; t<NT; t++) {
+            outPred << N << "\n";
+            outPred << "Properties=species:I:1:pos:R:" << dim << ":";
+            if (bb_flag) outPred << "BB:R:1";
+            if (struct_base_flag) outPred << "Psi:R:2:TT:R:1";
+            outPred << " time " << time_data[t]*timestep << "\n";
+            for (int i = 0; i < N; i++) {
+                if (dim == 2) {
+                    outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " ";
+                } else {
+                    outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " " << xyz_data[i+s*N][2] << " ";
+                }
+                if (bb_flag) outPred << dyn_bb_avg[i+s*N][t] << " ";
+                if (struct_base_flag) outPred << struct_base_local_psi[i+s*N][0] << " " << struct_base_local_psi[i+s*N][1] << " " << struct_base_local_theta_tanaka[i+s*N];
+                outPred << "\n";
             }
-            if(dyn=="BB") outPred << dyn_bb_avg[i+s*N][t] << "\n";
         }
+        outfilePred.close();
     }
-    outfilePred.close();
 
 }

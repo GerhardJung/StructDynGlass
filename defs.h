@@ -15,6 +15,7 @@
 #include "read_write_lammps.h"
 
 #define NTYPE 3
+#define NCG 4
 
 // OPTIONS
 extern std::string lammpsIn;       // lammps xyz output folder for readin
@@ -46,6 +47,8 @@ extern int NStruct;          // number of strctural observables to be analyzed
 
 extern int struct_base_flag;       // flag for the very basic structural descriptors
 extern int NHistoGr;
+extern double rcut2;            // cutoff for neighbor search
+extern int bo_Nneigh;    // how many neighbors are considered for bo average
 
 // DATA
 extern int N;                      // number of particles
@@ -69,17 +72,16 @@ extern double **dyn_bb_avg;
 extern double **dyn_exp_avg;
 extern double **dyn_isf_avg;
 
-//STRCUT
+//STRUCT
 extern double **struct_base_gr;
-extern double **struct_base_theta5;
-extern double **struct_base_theta6;
+
 extern double **struct_base_rad_classifier;
 extern double **struct_base_ang_classifier;
 extern double **struct_base_local_den;
 extern double **struct_base_local_epot;
-extern double **struct_base_local_theta;
-extern double **struct_base_local_psi5;
-extern double **struct_base_local_psi6;
+extern double **struct_base_local_theta_tanaka;
+extern double **struct_base_local_psi;
+//extern double **struct_base_local_bo;
 
 // Functions
 void allocate_storage();

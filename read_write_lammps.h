@@ -3,6 +3,6 @@
 
 void read_files_lammps();
 
-void print_xyz_isoconf(std::string dyn);
+void print_xyz_isoconf();
 
 #endif

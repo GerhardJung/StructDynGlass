@@ -4,12 +4,8 @@
 #include "pbc.h"
 #include "eval_isoconf.h"
 
-#define N_NEIGH_MAX 25
-
-int **neighbors;
-
 void eval_bb(){
-    neighbors = imatrix(0,NS*N-1,0,N_NEIGH_MAX-1);
+    int ** neighbors = imatrix(0,NS*N-1,0,N_NEIGH_MAX-1);
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) {
             for (int d=0; d<N_NEIGH_MAX;d++) {
@@ -19,7 +15,7 @@ void eval_bb(){
     }
 
     // calc original neighbors
-    findneighbors();
+    findneighbors(rcuti2, neighbors);
 
     // loop over time
     int n0;
@@ -31,7 +27,7 @@ void eval_bb(){
         for (int s=0; s<NS;s++) { // loop over structures
             for (int i=0; i<N;i++) {
                 for (int j=0; j<NI;j++) {
-                    checkneighbors(s, i,j, t, n0, nt);
+                    checkneighbors(s, i,j, t, n0, nt, neighbors);
                     // add to probability distribution and averages
                     double C_loc= nt/((double) n0);
                     add_histogram_avg(s,i,bb_hist_lower,bb_hist_upper,C_loc);
@@ -48,16 +44,13 @@ void eval_bb(){
 
     }
 
-    // print results (later, when strcture is evaluated)
-    // print_xyz_isoconf("BB");
-
     free_imatrix(neighbors,0,NS*N-1,0,N_NEIGH_MAX-1);
 }
 
 
 
 // Help functions
-void findneighbors() {
+void findneighbors(int rcut2, int ** neighbors) {
     double dr, dx;
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) {
@@ -70,7 +63,7 @@ void findneighbors() {
                     dr += dx*dx;
                 }
 
-                if (dr < rcuti2 && i != j ) {
+                if (dr < rcut2 && i != j ) {
                     neighbors[i+s*N][ncount] = j;
                     ncount ++;
                 }
@@ -80,7 +73,7 @@ void findneighbors() {
     }
 }
 
-void checkneighbors(int s, int i, int j, int t, int &n0, int &nt) {
+void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbors) {
     double dr, dx;
     n0 = 0;
     nt = 0;
