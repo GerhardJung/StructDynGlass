@@ -44,8 +44,12 @@ void eval_struct_base(){
                     neighbors[i+s*N][ncount] = j;
                     ncount ++;
                 }
+
+                // calculate epot
+                if (i!=j) struct_base_local_epot[i+s*N][0] += calc_epot(iType, jType, dr);
                 
-            }
+            } 
+
         }
     }
 
@@ -56,8 +60,8 @@ void eval_struct_base(){
     // calc psi_6/phi_5/theta_tanaka
     calc_psi(neighbors);
 
-    // coarse-grain, calc epot and density
-    eval_epot_den_cg();
+    // coarse-grain and calculate density
+    eval_den_cg();
 
     free_imatrix(neighbors,0,NS*N-1,0,N_NEIGH_MAX-1);
 }
@@ -179,7 +183,57 @@ void calc_psi(int ** neighbors){
     }
 }
 
-void eval_epot_den_cg(){
+// iterate over all particles to calculate coarse-grained quantities and density
+void eval_den_cg(){
+    double mean_den[NCG];
+    double mean_epot[NCG];
+    double mean_psi[2*NCG];
+    double mean_theta_tanaka[NCG];
+
+    for (int s=0; s<NS;s++) { // loop over structures
+        for (int i=0; i<N;i++) { // loop over particles
+
+            for (int c=0; c<NCG; c++) {
+                mean_den[c] = 0.0;
+                mean_epot[c]=0.0;
+                mean_psi[2*c]=0.0;
+                mean_psi[2*c+1]=0.0;
+                mean_theta_tanaka[c]=0.0;
+            }
+
+            for (int j=0; j<N;j++) { // loop over particle pairs
+                double dr = 0.0, dx;
+                for (int d=0; d<dim;d++) {
+                    dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
+                    apply_pbc(dx);
+                    dr += dx*dx;
+                }
+                dr = sqrt(dr);
+
+                for (int c=0; c<NCG; c++) {
+                    double L = c;
+                    if (L < 0.1) L = 0.1;
+                    double w = exp(-dr/L);
+                    mean_den[c] += w;
+                    mean_epot[c] += w*struct_base_local_epot[j+s*N][0]/2.0;
+                    mean_psi[2*c] += w*struct_base_local_psi[j+s*N][0];
+                    mean_psi[2*c+1] += w*struct_base_local_psi[j+s*N][1];
+                    mean_theta_tanaka[c]+= w*struct_base_local_theta_tanaka[j+s*N][0];
+                }
+            }
+
+            for (int c=0; c<NCG; c++) {
+                double L = c;
+                if (L < 0.1) L = 0.1;
+                struct_base_local_den[i+s*N][c] = mean_den[c]/((L+1.0)*(L+1.0)*(L+1.0) );
+                struct_base_local_epot[i+s*N][c] = mean_epot[c]/mean_den[c];
+                struct_base_local_psi[i+s*N][2*c] = mean_psi[2*c]/mean_den[c];
+                struct_base_local_psi[i+s*N][2*c+1] = mean_psi[2*c+1]/mean_den[c];
+                struct_base_local_theta_tanaka[i+s*N][c] = mean_theta_tanaka[c]/mean_den[c];
+            }
+
+        }
+    }
 
 }
 
@@ -204,10 +258,15 @@ double determine_epsilon(int iType, int jType) {
     return 0.0;
 }
 
-double calc_epot(int iType, int jType, double dist) {
+double calc_epot(int iType, int jType, double dist2) {
     double sigma = determine_sigma(iType, jType);
     double epsilon = determine_epsilon(iType, jType);
 
-    double epot = 0.0;
-    return epot;
+    if (dist2 < RC2 ) {
+        double rij2 = dist2/(sigma*sigma);
+        double rij4 = rij2*rij2;
+        double rij6 = 1.0/(rij4*rij2);
+        double rij12 = rij6*rij6;
+        return 4.0*epsilon*(C0+C2*rij2+C4*rij4 - rij6 + rij12 ) ;
+    } else return 0.0;
 }

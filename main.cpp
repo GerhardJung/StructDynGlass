@@ -7,6 +7,7 @@
 #include "dyn_exp.h" 
 #include "dyn_isf.h" 
 #include "struct_base.h" 
+#include "global.h"
  
  int main() {
    
@@ -140,4 +141,7 @@
 
     // print xyz
     print_xyz_isoconf();
+
+    // calculate and print important global properties
+    calc_print_global();
  }

@@ -50,7 +50,7 @@ void eval_bb(){
 
 
 // Help functions
-void findneighbors(int rcut2, int ** neighbors) {
+void findneighbors(double rcut2, int ** neighbors) {
     double dr, dx;
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) {
@@ -68,7 +68,7 @@ void findneighbors(int rcut2, int ** neighbors) {
                     ncount ++;
                 }
             }
-            //if (s==0 && i == 264) std::cout << ncount << std::endl;
+            //if (s==0 && i == 264) std::cout << rcut2 << std::endl;
         }
     }
 }
@@ -78,7 +78,7 @@ void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbo
     n0 = 0;
     nt = 0;
     while (neighbors[i+s*N][n0] != -1 ) {
-        //if(n0>17) std::cout << neighbors[i+s*N][n0] << std::endl;
+        //if(n0>5) std::cout << neighbors[i+s*N][n0] << std::endl;
         dr = 0;
         for (int d=0; d<dim;d++) {
             dx = xyz_data[i+s*N][d+t*dim+dim*NT*j] - xyz_data[neighbors[i+s*N][n0]+s*N][d+t*dim+dim*NT*j];

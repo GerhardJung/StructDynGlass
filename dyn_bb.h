@@ -6,7 +6,7 @@
 void eval_bb();
 
 // Help functions
-void findneighbors(int rcut2, int ** neighbors);
+void findneighbors(double rcut2, int ** neighbors);
 void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbors);
 
 #endif
