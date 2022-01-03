@@ -194,3 +194,20 @@ double determine_sigma(int iType, int jType) {
     if ((iType==2 && jType == 1) || (iType==1 && jType == 2)) return 0.8;
     return 0.0;
 }
+double determine_epsilon(int iType, int jType) {
+    if (iType==0 && jType == 0) return 1.0;
+    if (iType==1 && jType == 1) return 0.5;
+    if (iType==2 && jType == 2) return 0.75;
+    if ((iType==1 && jType == 0) || (iType==0 && jType == 1)) return 1.5;
+    if ((iType==2 && jType == 0) || (iType==0 && jType == 2)) return 0.75;
+    if ((iType==2 && jType == 1) || (iType==1 && jType == 2)) return 1.5;
+    return 0.0;
+}
+
+double calc_epot(int iType, int jType, double dist) {
+    double sigma = determine_sigma(iType, jType);
+    double epsilon = determine_epsilon(iType, jType);
+
+    double epot = 0.0;
+    return epot;
+}
