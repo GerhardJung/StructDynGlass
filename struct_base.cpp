@@ -118,7 +118,7 @@ void calc_psi(int ** neighbors){
         for (int i=0; i<N;i++) { // loop over particles
             int n0 = 0;
             while (neighbors[i+s*N][n0] != -1 ) {
-                std::cout << n0 << " " << neighbors[i+s*N][n0] << std::endl;
+                //std::cout << n0 << " " << neighbors[i+s*N][n0] << std::endl;
                 //if(n0>17) std::cout << neighbors[i+s*N][n0] << std::endl;
                 dr = 0.0;
                 for (int d=0; d<dim;d++) {
@@ -166,7 +166,7 @@ void calc_psi(int ** neighbors){
                         double sigma_kj = determine_sigma(type_data[k+s*N], type_data[j+s*N]); 
                         double theta2 = acos ( (sigma_ij*sigma_ij + sigma_ik*sigma_ik - sigma_kj*sigma_kj) / (2.0*sigma_ij*sigma_ik)  );     
                         struct_base_local_theta_tanaka[i+s*N][0] +=  abs( thetai - theta2);    
-                        std::cout << thetai << " " << theta2 << " " << abs( thetai - theta2) << std::endl;    
+                        //std::cout << thetai << " " << theta2 << " " << abs( thetai - theta2) << std::endl;    
                     }
                     n1++;
                 }

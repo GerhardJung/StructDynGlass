@@ -22,7 +22,7 @@ void eval_bb(){
     int nt;
     for (int t=1; t<NT; t++) {
         std::cout << "EVAL BB " << t << std::endl; 
-        reset_dyn();
+        reset_dyn(t);
 
         for (int s=0; s<NS;s++) { // loop over structures
             for (int i=0; i<N;i++) {
@@ -30,19 +30,18 @@ void eval_bb(){
                     checkneighbors(s, i,j, t, n0, nt, neighbors);
                     // add to probability distribution and averages
                     double C_loc= nt/((double) n0);
-                    add_histogram_avg(s,i,bb_hist_lower,bb_hist_upper,C_loc);
+                    add_histogram_avg(s,i,dyn_ranges[bb_flag][0],dyn_ranges[bb_flag][1],C_loc);
                     //if (t==1 && C_loc <1) std::cout << s << " "<< i << " " << C_loc << std::endl;
                 }
             }
         }
 
         // the main evaluation for the isoconfigurational ensemble
-        eval_isoconf(t, "BB");
-
-        // write results
-        print_isoconf("BB");
-
+        eval_isoconf(t,bb_flag);
     }
+
+    // write results
+    print_isoconf(bb_flag,"BB");
 
     free_imatrix(neighbors,0,NS*N-1,0,N_NEIGH_MAX-1);
 }

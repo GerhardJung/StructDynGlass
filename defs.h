@@ -17,6 +17,8 @@
 #define NTYPE 3
 #define NCG 4
 
+#define EPS 0.000000001
+
 // OPTIONS
 extern std::string lammpsIn;       // lammps xyz output folder for readin
 extern std::string folderOut; // folder to output isoconfigurational data
@@ -24,26 +26,23 @@ extern int CnfStart, CnfStep;      // to open output files
 extern double timestep;            // size of the timestep
 extern int NS;                     // number of different inital structures
 extern int NI;                     // number of different isoconfigurational trajectories
-extern int NHisto;                 // number of histograms
+extern int NHisto;                 // number of bin in the histograms (dynamical observables)
+extern int NHistoStruct;           // number of bin in the histograms (structural observables)
+
 extern int NDyn;                   // number of dynamical observables to be analyzed
 
 extern int bb_flag;                // flags for dynamical observables (bond-breaking)
 extern double rcuti2;
 extern double rcuto2;              //inner and outer cutoff for bond breaking
-extern double bb_hist_lower;
-extern double bb_hist_upper;
 
 extern int exp_flag;               // flags for dynamical observables (exponential)
 extern double exp_scale4i;         // length scale for exponential decay
-extern double exp_hist_lower;
-extern double exp_hist_upper;
 
 extern int isf_flag;               // flags for dynamical observables (isf)
 extern double qisf;                // length scale for isf
-extern double isf_hist_lower;
-extern double isf_hist_upper;
 
 extern int NStruct;          // number of strctural observables to be analyzed
+extern int NStructTotal;
 
 extern int struct_base_flag;       // flag for the very basic structural descriptors
 extern int NHistoGr;
@@ -60,17 +59,15 @@ extern double ** xyz_data;
 extern int * time_data;
 extern int * NPerType;
 
+extern double * global_properties;
+
 //DYN
 extern double **dyn_hist_data;
 extern double *dyn_avg;
 extern double *dyn_avg2;
 extern double **dyn_pred;
-extern double **dyn_hist_iso;
-extern double **dyn_hist_val;
+extern double **dyn_avg_save;
 
-extern double **dyn_bb_avg;
-extern double **dyn_exp_avg;
-extern double **dyn_isf_avg;
 
 //STRUCT
 extern double **struct_base_gr;
@@ -83,7 +80,19 @@ extern double **struct_base_local_theta_tanaka;
 extern double **struct_base_local_psi;
 //extern double **struct_base_local_bo;
 
+// DYN STRUCT CORRELATION, HISTOGRAMMS
+extern int **dyn_ranges;
+extern double **dyn_hist_iso;
+extern double **dyn_hist_val;
+extern int **struct_ranges;
+extern double **struct_hist;
+extern double **dyn_struct_hist_iso;
+extern double **dyn_struct_hist_val;
+extern double **dyn_struct_pred;
+
 // Functions
 void allocate_storage();
+
+
 
 #endif

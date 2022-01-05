@@ -45,10 +45,12 @@
                  NS = parts[0].toInt();
                  NI = parts[1].toInt();
                  NHisto = parts[2].toInt();
+                 NHistoStruct = parts[3].toInt();
                  break;
             }
             case 4: {
                 NDyn = line.toInt();
+                dyn_ranges = imatrix(0,NDyn-1,0,1);
                 break;
             }
             case 5: {
@@ -60,24 +62,23 @@
 
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BB") {
-                    bb_flag = 1;
+                    bb_flag = Ndyn_loc;
                     rcuti2 = parts[1].toDouble()*parts[1].toDouble();
                     rcuto2 = parts[2].toDouble()*parts[2].toDouble();
-                    bb_hist_lower = parts[3].toDouble();
-                    bb_hist_upper = parts[4].toDouble();
+                    dyn_ranges[bb_flag][0] = parts[3].toDouble();
+                    dyn_ranges[bb_flag][1] = parts[4].toDouble();
                 } else if (parts[0] == "EXP") {
-                    exp_flag = 1;
+                    exp_flag = Ndyn_loc;
                     exp_scale4i = parts[1].toDouble();
                     exp_scale4i = 1.0/(exp_scale4i*exp_scale4i*exp_scale4i*exp_scale4i);
-                    exp_hist_lower = parts[2].toDouble();
-                    exp_hist_upper = parts[3].toDouble();
+                    dyn_ranges[exp_flag][0] = parts[2].toDouble();
+                    dyn_ranges[exp_flag][1] = parts[3].toDouble();
                 }  else if (parts[0] == "ISF") {
-                    isf_flag = 1;
+                    isf_flag = Ndyn_loc;
                     qisf = parts[1].toDouble();
-                    isf_hist_lower = parts[2].toDouble();
-                    isf_hist_upper = parts[3].toDouble();
+                    dyn_ranges[isf_flag][0] = parts[2].toDouble();
+                    dyn_ranges[isf_flag][1] = parts[3].toDouble();
                 }  
-
 
                 Ndyn_loc ++;
                 break;
@@ -89,7 +90,8 @@
             case 7: {
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BASE") {
-                    struct_base_flag = 1;
+                    NStructTotal += 5;
+                    struct_base_flag = Nstruct_loc;
                     NHistoGr = parts[1].toInt();
                     rcut2 = parts[2].toDouble()*parts[2].toDouble();
                     bo_Nneigh = parts[3].toInt();
@@ -120,24 +122,27 @@
     std::cout << "CnfStart/CnfStep/timestep: " << CnfStart << " " << CnfStep << " " << timestep << std::endl;
     std::cout << "NS/NI/NHisto: " << NS << " " << NI << " " << NHisto << std::endl;
     std::cout << "EVALUATE " << NDyn << " dynamical observables:" << std::endl;
-    if (bb_flag==1) std::cout << "    Bond-Breaking" << " " << sqrt(rcuti2) << " " << sqrt(rcuto2) << std::endl;
-    if (exp_flag==1) std::cout << "    Exponential Decay" << " " << sqrt(sqrt(1.0/exp_scale4i)) << std::endl;
-    if (isf_flag==1) std::cout << "    Intermediate Scattering Function" << " " << qisf << std::endl;
+    if (bb_flag>=0) std::cout << "    Bond-Breaking" << " " << sqrt(rcuti2) << " " << sqrt(rcuto2) << std::endl;
+    if (exp_flag>=0) std::cout << "    Exponential Decay" << " " << sqrt(sqrt(1.0/exp_scale4i)) << std::endl;
+    if (isf_flag>=0) std::cout << "    Intermediate Scattering Function" << " " << qisf << std::endl;
 
     std::cout << "EVALUATE " << Nstruct_loc << " statical descriptors:" << std::endl;
-    if (struct_base_flag==1) std::cout << "    Base" << " " << NHistoGr  << std::endl;
+    if (struct_base_flag>=0) std::cout << "    Base" << " " << NHistoGr  << std::endl;
 
     // read files
     read_files_lammps();
     apply_pbc_global();
 
-    // calculate isoconfigurational averages and predictabilities
-    if (bb_flag) eval_bb();
-    if (exp_flag) eval_exp();
-    if (isf_flag) eval_isf();
-
     // calculate statical properties
-    if (struct_base_flag) eval_struct_base();
+    if (struct_base_flag>=0) eval_struct_base();
+
+    // eval boundaries and structural histogramms
+    calc_bonds_histograms_structure();
+
+    // calculate isoconfigurational averages and predictabilities
+    if (bb_flag>=0) eval_bb();
+    if (exp_flag>=0) eval_exp();
+    if (isf_flag>=0) eval_isf();
 
     // print xyz
     print_xyz_isoconf();

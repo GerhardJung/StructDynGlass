@@ -126,15 +126,16 @@ void print_xyz_isoconf(){
         for (int t=1; t<NT; t++) {
             outPred << N << "\n";
             outPred << "Properties=species:I:1:pos:R:" << dim;
-            if (struct_base_flag) {
+            if (struct_base_flag >= 0) {
                     for (int c=0; c<NCG; c++) outPred << ":DEN" << c << ":R:1";
                     for (int c=0; c<NCG; c++) outPred << ":EPOT" << c << ":R:1";
                     for (int c=0; c<NCG; c++) outPred << ":PSI5" << c << ":R:1";
                     for (int c=0; c<NCG; c++) outPred << ":PSI6" << c << ":R:1";
                     for (int c=0; c<NCG; c++) outPred << ":TT" << c << ":R:1";
                 }
-            if (bb_flag) outPred << ":BB:R:1";
-            if (exp_flag) outPred << ":EXP:R:1";
+            if (bb_flag >= 0) outPred << ":BB:R:1";
+            if (exp_flag >=0) outPred << ":EXP:R:1";
+            if (isf_flag >=0) outPred << ":ISF:R:1";
             outPred << " time " << time_data[t]*timestep << "\n";
             for (int i = 0; i < N; i++) {
                 if (dim == 2) {
@@ -142,16 +143,17 @@ void print_xyz_isoconf(){
                 } else {
                     outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " " << xyz_data[i+s*N][2] << " ";
                 }
-                if (struct_base_flag) {
+                if (struct_base_flag>= 0) {
                     for (int c=0; c<NCG; c++) outPred << struct_base_local_den[i+s*N][c] << " ";
                     for (int c=0; c<NCG; c++) outPred << struct_base_local_epot[i+s*N][c] << " ";
                     for (int c=0; c<NCG; c++) outPred << struct_base_local_psi[i+s*N][2*c] << " "; 
                     for (int c=0; c<NCG; c++) outPred << struct_base_local_psi[i+s*N][2*c+1] << " "; 
                     for (int c=0; c<NCG; c++)outPred << struct_base_local_theta_tanaka[i+s*N][c] << " ";
                 }
-                if (bb_flag) outPred << dyn_bb_avg[i+s*N][t] << " ";
-                if (exp_flag) outPred << dyn_exp_avg[i+s*N][t] << " ";
-                //if (isf_flag) outPred << dyn_isf_avg[i+s*N][t] << " ";
+
+                if (bb_flag>= 0) outPred << dyn_avg_save[i+s*N][bb_flag*NT+t] << " ";
+                if (exp_flag>= 0) outPred << dyn_avg_save[i+s*N][exp_flag*NT+t] << " ";
+                if (isf_flag>= 0) outPred << dyn_avg_save[i+s*N][isf_flag*NT+t] << " ";
                 outPred << "\n";
             }
         }
