@@ -20,7 +20,7 @@ void calc_print_global(){
     for (int type=0; type<NTYPE; type++) {
         for (int t=0; t<NT; t++) {
           Ciso[type*NT+t] /= (double) NS*NPerType[type];
-          if (type==0) std::cout << Ciso[type*NT+t] << std::endl;
+          //if (type==0) std::cout << Ciso[type*NT+t] << std::endl;
         }
     }
     // then eval tau_alpha from isf
@@ -43,7 +43,7 @@ void calc_print_global(){
   if (struct_base_flag>=0) {
     for (int s=0; s<NS;s++) { // loop over structures
       for (int i=0; i<N;i++) { // loop over particles
-        global_properties[type_data[i+s*N]+NTYPE] += struct_base_local_theta_tanaka[i+s*N][0];
+        global_properties[type_data[i+s*N]+NTYPE] += struct_local[NCG*(struct_base_flag+4)][i+s*N];
       }
     }
   }
@@ -84,14 +84,16 @@ void calc_bonds_histograms_structure(){
     }
 
     // determine bonds and calculate hitograms
-    double struct_loc[NS*N];
+    double * struct_loc;
     for (int j = 0; j < NStructTotal; j++) {
       for (int c = 0; c < NCG; c++) {
-        struct_array(j,c,struct_loc);
+        struct_loc = struct_local[j*NCG+c];
+        //if (j==0 && c==2) std::cout << struct_ranges[j*NCG+c][0] << " " << struct_ranges[j*NCG+c][1] << " " << struct_loc[2] << std::endl;
         for (int i=0; i<N*NS; i++) { // find minima and maxima
           if (struct_loc[i] < struct_ranges[j*NCG+c][0]) struct_ranges[j*NCG+c][0] = struct_loc[i];
           if (struct_loc[i] > struct_ranges[j*NCG+c][1]) struct_ranges[j*NCG+c][1] = struct_loc[i];
         }
+        //if (j==0 && c==2) std::cout << struct_ranges[j*NCG+c][0] << " " << struct_ranges[j*NCG+c][1] << std::endl;
 
         // calculate histograms
         for (int i=0; i<N*NS; i++) {
@@ -108,21 +110,4 @@ void calc_bonds_histograms_structure(){
       }
     }
 
-}
-
-
-// help functions to implement scalable code for structural descriptors
-void struct_array(int index, int c, double * array){
-  if (struct_base_flag >=0) {
-    if (index == 0) copy_array(struct_base_local_den,c,array);
-    if (index == 1) copy_array(struct_base_local_epot,c,array);
-    if (index == 2) copy_array(struct_base_local_psi,2*c,array);
-    if (index == 3) copy_array(struct_base_local_psi,2*c+1,array);
-    if (index == 4) copy_array(struct_base_local_theta_tanaka,c,array);
-    index -= 5;
-  }
-
-}
-void copy_array(double ** array_in, int index, double * array_out) {
-  for (int i=0; i<N*NS; i++) array_out[i]=array_in[i][index];
 }

@@ -16,6 +16,6 @@ void calc_histograms_information_theory(double * struct_array, int loc_dyn,int l
 void eval_information_theory_correlation(int t,int loc_struct,int c);
 void eval_pearson_spearman_correlation(int t,double * struct_array,int loc_struct,int c);
 
-void print_isoconf(int loc,std::string dyn);
+void print_isoconf(int loc);
 
 #endif

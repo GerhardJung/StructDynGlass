@@ -32,7 +32,7 @@ void eval_exp(){
     }
 
     // write results
-    print_isoconf(exp_flag,"EXP");
+    print_isoconf(exp_flag);
 
 
 }

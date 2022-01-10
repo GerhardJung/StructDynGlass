@@ -6,7 +6,9 @@
 #include "dyn_bb.h" 
 #include "dyn_exp.h" 
 #include "dyn_isf.h" 
-#include "struct_base.h" 
+#include "dyn_msd.h" 
+#include "struct_base.h"
+#include "struct_soft_modes.h"  
 #include "global.h"
  
  int main() {
@@ -50,7 +52,8 @@
             }
             case 4: {
                 NDyn = line.toInt();
-                dyn_ranges = imatrix(0,NDyn-1,0,1);
+                dyn_ranges = dmatrix(0,NDyn-1,0,1);
+                DynNames = new std::string[NDyn];
                 break;
             }
             case 5: {
@@ -67,17 +70,29 @@
                     rcuto2 = parts[2].toDouble()*parts[2].toDouble();
                     dyn_ranges[bb_flag][0] = parts[3].toDouble();
                     dyn_ranges[bb_flag][1] = parts[4].toDouble();
+                    DynNames[bb_flag] = "BB";
                 } else if (parts[0] == "EXP") {
                     exp_flag = Ndyn_loc;
                     exp_scale4i = parts[1].toDouble();
                     exp_scale4i = 1.0/(exp_scale4i*exp_scale4i*exp_scale4i*exp_scale4i);
                     dyn_ranges[exp_flag][0] = parts[2].toDouble();
                     dyn_ranges[exp_flag][1] = parts[3].toDouble();
+                    DynNames[exp_flag] = "EXP";
                 }  else if (parts[0] == "ISF") {
                     isf_flag = Ndyn_loc;
                     qisf = parts[1].toDouble();
                     dyn_ranges[isf_flag][0] = parts[2].toDouble();
                     dyn_ranges[isf_flag][1] = parts[3].toDouble();
+                    DynNames[isf_flag] = "ISF";
+                }  else if (parts[0] == "MSD") {
+                    msd_flag = Ndyn_loc;
+                    if (parts[2] != "DYN") {
+                        dyn_ranges[msd_flag][0] = parts[2].toDouble();
+                        dyn_ranges[msd_flag][1] = parts[3].toDouble();
+                    } else {
+                        dyn_ranges[msd_flag][0] = - 1.0; // calculate ranges dynamically
+                    }
+                    DynNames[msd_flag] = "MSD";
                 }  
 
                 Ndyn_loc ++;
@@ -85,18 +100,26 @@
             }
             case 6: {
                 NStruct = line.toInt();
+                StructNames = new std::string[NStruct+10];
                 break;
             }
             case 7: {
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BASE") {
+                    struct_base_flag = NStructTotal;
                     NStructTotal += 5;
-                    struct_base_flag = Nstruct_loc;
                     NHistoGr = parts[1].toInt();
                     rcut2 = parts[2].toDouble()*parts[2].toDouble();
-                    bo_Nneigh = parts[3].toInt();
-                }     
-
+                    StructNames[struct_base_flag] = "DEN";
+                    StructNames[struct_base_flag+1] = "EPOT";
+                    StructNames[struct_base_flag+2] = "PSI5";
+                    StructNames[struct_base_flag+3] = "PSI6";
+                    StructNames[struct_base_flag+4] = "TT";
+                }     else if (parts[0] == "SM") {
+                    NStructTotal+=1;
+                    struct_soft_modes_flag = NStructTotal;
+                    StructNames[struct_soft_modes_flag] = "SM";
+                }
 
                 Nstruct_loc ++;
                 break;
@@ -125,9 +148,11 @@
     if (bb_flag>=0) std::cout << "    Bond-Breaking" << " " << sqrt(rcuti2) << " " << sqrt(rcuto2) << std::endl;
     if (exp_flag>=0) std::cout << "    Exponential Decay" << " " << sqrt(sqrt(1.0/exp_scale4i)) << std::endl;
     if (isf_flag>=0) std::cout << "    Intermediate Scattering Function" << " " << qisf << std::endl;
+    if (msd_flag>=0) std::cout << "    Mean Squared Displacement" << " " << qisf << std::endl;
 
     std::cout << "EVALUATE " << Nstruct_loc << " statical descriptors:" << std::endl;
     if (struct_base_flag>=0) std::cout << "    Base" << " " << NHistoGr  << std::endl;
+    if (struct_soft_modes_flag>=0) std::cout << "    Soft Modes" << std::endl;
 
     // read files
     read_files_lammps();
@@ -135,6 +160,7 @@
 
     // calculate statical properties
     if (struct_base_flag>=0) eval_struct_base();
+    if (struct_soft_modes_flag>=0) eval_struct_soft_modes();
 
     // eval boundaries and structural histogramms
     calc_bonds_histograms_structure();
@@ -143,6 +169,7 @@
     if (bb_flag>=0) eval_bb();
     if (exp_flag>=0) eval_exp();
     if (isf_flag>=0) eval_isf();
+    if (msd_flag>=0) eval_msd();
 
     // print xyz
     print_xyz_isoconf();

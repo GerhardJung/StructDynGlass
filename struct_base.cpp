@@ -6,6 +6,8 @@
 
 void eval_struct_base(){
 
+    std::cout << "EVAL STRUCT BASE " << std::endl; 
+
     // save neighbors
     int ** neighbors = imatrix(0,NS*N-1,0,N_NEIGH_MAX-1);
     for (int s=0; s<NS;s++) { // loop over structures
@@ -46,7 +48,7 @@ void eval_struct_base(){
                 }
 
                 // calculate epot
-                if (i!=j) struct_base_local_epot[i+s*N][0] += calc_epot(iType, jType, dr);
+                if (i!=j) struct_local[NCG*(struct_base_flag+1)][i+s*N] += calc_epot(iType, jType, dr);
                 
             } 
 
@@ -112,8 +114,8 @@ void rescale_print_gr(){
 }
 
 void calc_psi(int ** neighbors){
-    std::cout << "calc_psi" << std::endl;
     double dx[dim], dr;
+    double save_psi[4*N*NS] = {0};
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
             int n0 = 0;
@@ -130,10 +132,10 @@ void calc_psi(int ** neighbors){
                 //std::cout << n0 << " " << theta << " " << dx[0]/sqrt(dr) << std::endl;
 
                 // calc psi
-                struct_base_local_psi[i+s*N][0] += cos(5.0*thetaij);
-                struct_base_local_psi[i+s*N][1] += sin(5.0*thetaij);
-                struct_base_local_psi[i+s*N][2] += cos(6.0*thetaij);
-                struct_base_local_psi[i+s*N][3] += sin(6.0*thetaij);
+                save_psi[4*(i+s*N)] += cos(5.0*thetaij);
+                save_psi[4*(i+s*N)+1] += sin(5.0*thetaij);
+                save_psi[4*(i+s*N)+2] += cos(6.0*thetaij);
+                save_psi[4*(i+s*N)+3] += sin(6.0*thetaij);
 
                 // calc theta tanaka
                 int n1=0;
@@ -165,7 +167,7 @@ void calc_psi(int ** neighbors){
                         double sigma_ik = determine_sigma(type_data[i+s*N], type_data[k+s*N]);   
                         double sigma_kj = determine_sigma(type_data[k+s*N], type_data[j+s*N]); 
                         double theta2 = acos ( (sigma_ij*sigma_ij + sigma_ik*sigma_ik - sigma_kj*sigma_kj) / (2.0*sigma_ij*sigma_ik)  );     
-                        struct_base_local_theta_tanaka[i+s*N][0] +=  abs( thetai - theta2);    
+                        struct_local[NCG*(struct_base_flag+4)][i+s*N] +=  abs( thetai - theta2);    
                         //std::cout << thetai << " " << theta2 << " " << abs( thetai - theta2) << std::endl;    
                     }
                     n1++;
@@ -175,9 +177,9 @@ void calc_psi(int ** neighbors){
             }
 
             for (int j = 0; j < 2; j++) {
-                struct_base_local_psi[i+s*N][j] = sqrt(struct_base_local_psi[i+s*N][2*j]*struct_base_local_psi[i+s*N][2*j] + struct_base_local_psi[i+s*N][2*j+1]*struct_base_local_psi[i+s*N][2*j+1])/((double) n0);
+                struct_local[NCG*(struct_base_flag+j+2)][i+s*N] = sqrt(save_psi[4*(i+s*N)+2*j]*save_psi[4*(i+s*N)+2*j] + save_psi[4*(i+s*N)+2*j+1]*save_psi[4*(i+s*N)+2*j+1])/((double) n0);
             }
-            struct_base_local_theta_tanaka[i+s*N][0] /= n0*2.0;
+            struct_local[NCG*(struct_base_flag+4)][i+s*N] /= n0*2.0;
 
         }
     }
@@ -215,21 +217,21 @@ void eval_den_cg(){
                     if (L < 0.1) L = 0.1;
                     double w = exp(-dr/L);
                     mean_den[c] += w;
-                    mean_epot[c] += w*struct_base_local_epot[j+s*N][0]/2.0;
-                    mean_psi[2*c] += w*struct_base_local_psi[j+s*N][0];
-                    mean_psi[2*c+1] += w*struct_base_local_psi[j+s*N][1];
-                    mean_theta_tanaka[c]+= w*struct_base_local_theta_tanaka[j+s*N][0];
+                    mean_epot[c] += w*struct_local[NCG*(struct_base_flag+1)][j+s*N]/2.0;
+                    mean_psi[2*c] += w*struct_local[NCG*(struct_base_flag+2)][j+s*N];
+                    mean_psi[2*c+1] += w*struct_local[NCG*(struct_base_flag+3)][j+s*N];
+                    mean_theta_tanaka[c]+= w*struct_local[NCG*(struct_base_flag+4)][j+s*N];
                 }
             }
 
             for (int c=0; c<NCG; c++) {
                 double L = c;
                 if (L < 0.1) L = 0.1;
-                struct_base_local_den[i+s*N][c] = mean_den[c]/((L+1.0)*(L+1.0)*(L+1.0) );
-                struct_base_local_epot[i+s*N][c] = mean_epot[c]/mean_den[c];
-                struct_base_local_psi[i+s*N][2*c] = mean_psi[2*c]/mean_den[c];
-                struct_base_local_psi[i+s*N][2*c+1] = mean_psi[2*c+1]/mean_den[c];
-                struct_base_local_theta_tanaka[i+s*N][c] = mean_theta_tanaka[c]/mean_den[c];
+                struct_local[NCG*(struct_base_flag)+c][i+s*N] = mean_den[c]/((L+1.0)*(L+1.0)*(L+1.0) );
+                struct_local[NCG*(struct_base_flag+1)+c][i+s*N] = mean_epot[c]/mean_den[c];
+                struct_local[NCG*(struct_base_flag+2)+c][i+s*N] = mean_psi[2*c]/mean_den[c];
+                struct_local[NCG*(struct_base_flag+3)+c][i+s*N] = mean_psi[2*c+1]/mean_den[c];
+                struct_local[NCG*(struct_base_flag+4)+c][i+s*N] = mean_theta_tanaka[c]/mean_den[c];
             }
 
         }

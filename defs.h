@@ -30,6 +30,7 @@ extern int NHisto;                 // number of bin in the histograms (dynamical
 extern int NHistoStruct;           // number of bin in the histograms (structural observables)
 
 extern int NDyn;                   // number of dynamical observables to be analyzed
+extern std::string * DynNames; 
 
 extern int bb_flag;                // flags for dynamical observables (bond-breaking)
 extern double rcuti2;
@@ -41,13 +42,18 @@ extern double exp_scale4i;         // length scale for exponential decay
 extern int isf_flag;               // flags for dynamical observables (isf)
 extern double qisf;                // length scale for isf
 
+extern int msd_flag;            // flag for dynamical variables (msd)
+
 extern int NStruct;          // number of strctural observables to be analyzed
 extern int NStructTotal;
+extern std::string * StructNames; 
 
 extern int struct_base_flag;       // flag for the very basic structural descriptors
 extern int NHistoGr;
 extern double rcut2;            // cutoff for neighbor search
-extern int bo_Nneigh;    // how many neighbors are considered for bo average
+
+extern int struct_soft_modes_flag;       // flag for structural descriptors connected to soft modes
+extern double ** hessian;           // hessian matrix for soft mode analysis
 
 // DATA
 extern int N;                      // number of particles
@@ -56,6 +62,7 @@ extern int dim;                    // number of dimensions
 extern int NT;                     // number of timesteps
 extern int * type_data;
 extern double ** xyz_data;
+extern double ** xyz_inherent_data;
 extern int * time_data;
 extern int * NPerType;
 
@@ -70,21 +77,17 @@ extern double **dyn_avg_save;
 
 
 //STRUCT
-extern double **struct_base_gr;
+extern double **struct_local;
 
+extern double **struct_base_gr;
 extern double **struct_base_rad_classifier;
 extern double **struct_base_ang_classifier;
-extern double **struct_base_local_den;
-extern double **struct_base_local_epot;
-extern double **struct_base_local_theta_tanaka;
-extern double **struct_base_local_psi;
-//extern double **struct_base_local_bo;
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
-extern int **dyn_ranges;
+extern double **dyn_ranges;
 extern double **dyn_hist_iso;
 extern double **dyn_hist_val;
-extern int **struct_ranges;
+extern double **struct_ranges;
 extern double **struct_hist;
 extern double **dyn_struct_hist_iso;
 extern double **dyn_struct_hist_val;

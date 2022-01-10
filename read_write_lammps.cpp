@@ -53,11 +53,16 @@ void read_files_lammps(){
 
         for (int j=0; j<NI; j++) {
             QString pathij = pathi;
+            QString pathij_inherent = pathi;
             pathij.append(QString("%1.xyz").arg(j+1));
+            pathij_inherent.append(QString("%1_inherent.xyz").arg(j+1));
 
             QFile infile(pathij);   // input file with xyz
+            QFile infile_inherent(pathij_inherent);   // input file with xyz inherent
             infile.open(QIODevice::ReadOnly | QIODevice::Text);
+            infile_inherent.open(QIODevice::ReadOnly | QIODevice::Text);
             QTextStream infileStream(&infile);
+            QTextStream infileStream_inherent(&infile_inherent);
             //std::cout << pathij.toStdString() << std::endl;
 
             for (int t=0; t<NT; t++) {
@@ -69,16 +74,18 @@ void read_files_lammps(){
                 time_data[t] = line.toInt();
 
                 // skip header
-                for (int l=0; l<7; l++) {
-                    line = infileStream.readLine();
-                }
+                for (int l=0; l<7; l++) line = infileStream.readLine();
+                for (int l=0; l<9; l++) line = infileStream_inherent.readLine();
+
                 //if (j==0) std::cout << line.toStdString() << std::endl;
                 // read data
                 for (int l=0; l<N; l++) {
                     if (dim == 2) {
                         infileStream >> type_data[l+i*N] >> xyz_data[l+i*N][dim*t+dim*NT*j] >> xyz_data[l+i*N][1+dim*t+dim*NT*j];
+                        infileStream_inherent >> type_data[l+i*N] >> xyz_inherent_data[l+i*N][dim*t+dim*NT*j] >> xyz_inherent_data[l+i*N][1+dim*t+dim*NT*j];
                     } else {
                         infileStream >> type_data[l+i*N] >> xyz_data[l+i*N][dim*t+dim*NT*j] >> xyz_data[l+i*N][1+dim*t+dim*NT*j]  >> xyz_data[l+i*N][2+dim*t+dim*NT*j];
+                        infileStream_inherent >> type_data[l+i*N] >> xyz_inherent_data[l+i*N][dim*t+dim*NT*j] >> xyz_inherent_data[l+i*N][1+dim*t+dim*NT*j]  >> xyz_inherent_data[l+i*N][2+dim*t+dim*NT*j];
                         //if (j==0 && k==0 && l>1100) std::cout << "type " << type_data[l+i*N]<< std::endl;
                     }
                     type_data[l+i*N] --;
@@ -86,9 +93,11 @@ void read_files_lammps(){
                     
                 }
                 line = infileStream.readLine();
+                line = infileStream_inherent.readLine();
             }
 
             infile.close();
+            infile_inherent.close();
         }
     }
     std::cout << "NPerType ";
@@ -115,10 +124,12 @@ void read_files_lammps(){
 void print_xyz_isoconf(){
     QString pathOrig = QString::fromStdString(folderOut);
 
-    // print predictabilities
-    for (int s=0; s<NS; s++) {
+    // print only first 8 files
+    int NSloc = NS;
+    if (NSloc > 8) NSloc = 8;
+    for (int s=0; s<NSloc; s++) {
         QString pathPred = pathOrig;
-        pathPred.append(QString("/struct_isoconf_%1.xyz").arg(s));
+        pathPred.append(QString("struct_isoconf_%1.xyz").arg(s));
         std::cout << pathPred.toStdString() << std::endl;
         QFile outfilePred(pathPred);   // input file with xyz
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
@@ -126,16 +137,8 @@ void print_xyz_isoconf(){
         for (int t=1; t<NT; t++) {
             outPred << N << "\n";
             outPred << "Properties=species:I:1:pos:R:" << dim;
-            if (struct_base_flag >= 0) {
-                    for (int c=0; c<NCG; c++) outPred << ":DEN" << c << ":R:1";
-                    for (int c=0; c<NCG; c++) outPred << ":EPOT" << c << ":R:1";
-                    for (int c=0; c<NCG; c++) outPred << ":PSI5" << c << ":R:1";
-                    for (int c=0; c<NCG; c++) outPred << ":PSI6" << c << ":R:1";
-                    for (int c=0; c<NCG; c++) outPred << ":TT" << c << ":R:1";
-                }
-            if (bb_flag >= 0) outPred << ":BB:R:1";
-            if (exp_flag >=0) outPred << ":EXP:R:1";
-            if (isf_flag >=0) outPred << ":ISF:R:1";
+            for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred << ":" << QString::fromStdString(StructNames[k]) << c << ":R:1";
+            for (int k=0; k<NDyn; k++) outPred << ":" << QString::fromStdString(DynNames[k]) << ":R:1";
             outPred << " time " << time_data[t]*timestep << "\n";
             for (int i = 0; i < N; i++) {
                 if (dim == 2) {
@@ -143,17 +146,8 @@ void print_xyz_isoconf(){
                 } else {
                     outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " " << xyz_data[i+s*N][2] << " ";
                 }
-                if (struct_base_flag>= 0) {
-                    for (int c=0; c<NCG; c++) outPred << struct_base_local_den[i+s*N][c] << " ";
-                    for (int c=0; c<NCG; c++) outPred << struct_base_local_epot[i+s*N][c] << " ";
-                    for (int c=0; c<NCG; c++) outPred << struct_base_local_psi[i+s*N][2*c] << " "; 
-                    for (int c=0; c<NCG; c++) outPred << struct_base_local_psi[i+s*N][2*c+1] << " "; 
-                    for (int c=0; c<NCG; c++)outPred << struct_base_local_theta_tanaka[i+s*N][c] << " ";
-                }
-
-                if (bb_flag>= 0) outPred << dyn_avg_save[i+s*N][bb_flag*NT+t] << " ";
-                if (exp_flag>= 0) outPred << dyn_avg_save[i+s*N][exp_flag*NT+t] << " ";
-                if (isf_flag>= 0) outPred << dyn_avg_save[i+s*N][isf_flag*NT+t] << " ";
+                for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred << struct_local[k*NCG+c][i+s*N] << " ";
+                for (int k=0; k<NDyn; k++) outPred << dyn_avg_save[i+s*N][k*NT+t] << " ";
                 outPred << "\n";
             }
         }

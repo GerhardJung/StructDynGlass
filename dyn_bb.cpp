@@ -41,7 +41,7 @@ void eval_bb(){
     }
 
     // write results
-    print_isoconf(bb_flag,"BB");
+    print_isoconf(bb_flag);
 
     free_imatrix(neighbors,0,NS*N-1,0,N_NEIGH_MAX-1);
 }

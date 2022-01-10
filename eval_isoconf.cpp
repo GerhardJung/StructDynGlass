@@ -18,15 +18,11 @@ void reset_dyn(int t){
         for (int type=0; type<NTYPE; type++) {
             dyn_hist_iso[t][j+NHisto*type] = 0.0;
             dyn_hist_val[t][j+NHisto*type] = 0.0;
-            for (int s=0; s<NHistoStruct; s++) {
-                dyn_struct_hist_iso[type][s*NHisto+j] = 0.0;
-                dyn_struct_hist_val[type][s*NHisto+j] = 0.0;
-            }
         }
     }
 
     for (int j = 0; j < NCG*NStructTotal; j++) {
-        for (int k = 0; k < 4*NTYPE; k++) dyn_struct_pred[j+t*NCG*NStructTotal][k] = 0.0;
+        for (int k = 0; k < 6*NTYPE; k++) dyn_struct_pred[j+t*NCG*NStructTotal][k] = 0.0;
     }
 
 }
@@ -126,9 +122,9 @@ void eval_isoconf(int t, int loc){
         //if (type ==0) std::cout << Ciso[type] << " " << delta[type] << " " << Delta[type] << " " << std::endl; 
         delta[type] = delta[type] - Ciso[type]*Ciso[type];
         Delta[type] = Delta[type] - Ciso[type]*Ciso[type];
-        dyn_pred[t][5*type + 0] = Ciso[type];
-        dyn_pred[t][5*type + 1] = delta[type];
-        dyn_pred[t][5*type + 2] = Delta[type];
+        dyn_pred[t][6*type + 0] = Ciso[type];
+        dyn_pred[t][6*type + 1] = delta[type];
+        dyn_pred[t][6*type + 2] = Delta[type];
         //std::cout << Ciso[type] << std::endl;
 
     }
@@ -140,10 +136,19 @@ void eval_isoconf(int t, int loc){
     eval_information_theory_dynamics(t);
 
     // evalue connection dynamics <-> structure
-    double struct_loc[NS*N];
+    double * struct_loc;
     for (int j = 0; j < NStructTotal; j++) {
       for (int c = 0; c < NCG; c++) {
-        struct_array(j,c,struct_loc);
+        struct_loc = struct_local[j*NCG+c];
+        // rest histogramms
+        for (int j = 0; j < NHisto; j++) {
+            for (int type=0; type<NTYPE; type++) {
+                for (int s=0; s<NHistoStruct; s++) {
+                    dyn_struct_hist_iso[type][s*NHisto+j] = 0.0;
+                    dyn_struct_hist_val[type][s*NHisto+j] = 0.0;
+                }
+            }
+        }
 
         // calculate histograms for mutual information (dynamics <-> structure)
         calc_histograms_information_theory(struct_loc, loc, j, c);
@@ -151,10 +156,11 @@ void eval_isoconf(int t, int loc){
         // evaluate mututal information
         eval_information_theory_correlation(t,j,c);
 
+        // evaluate pearon and spearman rank coefficients
+        eval_pearson_spearman_correlation(t,struct_loc,j,c);
+
       }
     }
-
-
 
 }
 
@@ -184,31 +190,39 @@ void calc_histograms_dynamics(int t, int loc){
 
 void eval_information_theory_dynamics(int t) {
     // calc Imot et Is
-    double Imot[NTYPE];
-    double Is[NTYPE];
+    double I_dyn_struct_rel[NTYPE];
+    double I_dyn_struct[NTYPE];
+    double I_dyn_tot[NTYPE];
     // then eval the information
     for (int type=0; type<NTYPE; type++) {
-        Imot[type] = 0.0;
-        Is[type] = 0.0;
+        I_dyn_struct_rel[type] = 0.0;
+        I_dyn_struct[type] = 0.0;
+        I_dyn_tot[type] = 0.0;
     }
     for (int i = 0; i < NS*N; i++) {
         for (int l = 0; l < NHisto; l++) {
             if (dyn_hist_data[i][l] > 0 ) {
-                Imot[type_data[i]] -= dyn_hist_data[i][l]* log (dyn_hist_val[t][l+NHisto*type_data[i]]);
-                Is[type_data[i]] += dyn_hist_data[i][l]* log (dyn_hist_data[i][l]);
+                I_dyn_struct_rel[type_data[i]] += dyn_hist_data[i][l]* log2 (dyn_hist_data[i][l]/dyn_hist_val[t][l+NHisto*type_data[i]]);
+                I_dyn_struct[type_data[i]] += dyn_hist_data[i][l]* log2 (dyn_hist_data[i][l]);
+                
             } 
         }
     }
     for (int type=0; type<NTYPE; type++) {
-        Imot[type] /= (double) NS*NPerType[type];
-        Is[type] /= (double) NS*NPerType[type];
-        Is[type] = Imot[type] + Is[type];
+        for (int l = 0; l < NHisto; l++) {
+            if (dyn_hist_iso[t][l+NHisto*type] > 0 ) I_dyn_tot[type] += dyn_hist_iso[t][l+NHisto*type]* log2 (dyn_hist_iso[t][l+NHisto*type]);
+        }
+    }
+    for (int type=0; type<NTYPE; type++) {
+        I_dyn_struct_rel[type] /= (double) NS*NPerType[type];
+        I_dyn_struct[type] /= (double) NS*NPerType[type];
     }
 
     
     for (int type=0; type<NTYPE; type++) {
-        dyn_pred[t][5*type + 3] = Imot[type];
-        dyn_pred[t][5*type + 4] = Is[type];
+        dyn_pred[t][6*type + 3] = I_dyn_struct_rel[type];
+        dyn_pred[t][6*type + 4] = I_dyn_struct[type];
+        dyn_pred[t][6*type + 5] = I_dyn_tot[type];
     }
 }
 
@@ -245,17 +259,22 @@ void eval_information_theory_correlation(int t,int loc_struct,int c){
     for (int type=0; type<NTYPE; type++) {
         for (int l = 0; l < NHisto; l++) {
             for (int s = 0; s < NHistoStruct; s++) {
+                //if (type==0 && loc_struct==0 && c==2) std::cout << l << " " << s << " " << dyn_struct_hist_iso[type][l+NHisto*s] << " " << dyn_hist_iso[t][l+NHisto*type] << " " << struct_hist[loc_struct*NCG+c][type*NHistoStruct+s] << std::endl;
                 // first Imut for the particle motion
-                dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type]+= dyn_struct_hist_val[type][l+NHisto*s]*log(dyn_struct_hist_val[type][l+NHisto*s]/(dyn_hist_val[t][l+NHisto*type]*struct_hist[loc_struct*NCG+c][type*NHistoStruct+s]));
+                if (dyn_struct_hist_val[type][l+NHisto*s] > 0 && dyn_hist_val[t][l+NHisto*type] > 0 && struct_hist[loc_struct*NCG+c][type*NHistoStruct+s] > 0)
+                    dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type]+= dyn_struct_hist_val[type][l+NHisto*s]*log2(dyn_struct_hist_val[type][l+NHisto*s]/(dyn_hist_val[t][l+NHisto*type]*struct_hist[loc_struct*NCG+c][type*NHistoStruct+s]));
                 // then Imut for the propernsities
-                dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+NTYPE]+= dyn_struct_hist_iso[type][l+NHisto*s]*log(dyn_struct_hist_iso[type][l+NHisto*s]/(dyn_hist_iso[t][l+NHisto*type]*struct_hist[loc_struct*NCG+c][type*NHistoStruct+s]));
+                if (dyn_struct_hist_iso[type][l+NHisto*s] > 0 && dyn_hist_iso[t][l+NHisto*type] > 0 && struct_hist[loc_struct*NCG+c][type*NHistoStruct+s] > 0)
+                    dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+NTYPE]+= dyn_struct_hist_iso[type][l+NHisto*s]*log2(dyn_struct_hist_iso[type][l+NHisto*s]/(dyn_hist_iso[t][l+NHisto*type]*struct_hist[loc_struct*NCG+c][type*NHistoStruct+s]));
             }
         }
+        dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+4*NTYPE] = dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+NTYPE]/dyn_pred[t][6*type + 3];
+        dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+5*NTYPE] = dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+NTYPE]/(dyn_pred[t][6*type + 3]-dyn_pred[t][6*type + 4]);
     }
 }
 
 void eval_pearson_spearman_correlation(int t,double * struct_array,int loc_struct,int c){
-    // first pearon correlation coefficient
+    // first pearson correlation coefficient
     double mean[2*NTYPE];
     double cov[NTYPE];
     double var_dyn[NTYPE];
@@ -269,7 +288,7 @@ void eval_pearson_spearman_correlation(int t,double * struct_array,int loc_struc
     }
     for (int i = 0; i < NS*N; i++) {
         mean[type_data[i]] += dyn_avg[i];
-        mean[type_data[i]] += struct_array[i];
+        mean[type_data[i]+NTYPE] += struct_array[i];
     }
     for (int type=0; type<NTYPE; type++) {
         mean[type] /= (double) NS*NPerType[type];
@@ -282,7 +301,7 @@ void eval_pearson_spearman_correlation(int t,double * struct_array,int loc_struc
         var_struct[type_data[i]] += (struct_array[i]-mean[type_data[i]+NTYPE])*(struct_array[i]-mean[type_data[i]+NTYPE]);
     }
     for (int type=0; type<NTYPE; type++) {
-        dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+2*NTYPE]= cov[type]/(var_dyn[type]*var_struct[type]);
+        dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+2*NTYPE]= cov[type]/sqrt(var_dyn[type]*var_struct[type]);
     }
 
     // calculate ranks
@@ -294,41 +313,94 @@ void eval_pearson_spearman_correlation(int t,double * struct_array,int loc_struc
     }
     sort(save_dyn, save_dyn+NS*N); // sorting the array 
     sort(save_struct, save_struct+NS*N); // sorting the array 
-    map<double, double> rank_dyn; 
-    map<double, double> rank_struct; 
+    map<double, int> rank_dyn; 
+    map<double, int> rank_struct; 
     for (int i = 0; i < NS*N; i++) { 
         rank_dyn[save_dyn[i]] = i; 
         rank_struct[save_struct[i]] = i; 
     } 
-    for (int i = 0; i < NS*N; i++) cout << rank_dyn[dyn_avg[i]] << " "; 
+    /*for (int i = 0; i < NS*N; i++) {
+        if (rank_struct[struct_array[i]]==0) cout << struct_array[i] << " "; 
+        if (rank_struct[struct_array[i]]==1) cout << struct_array[i] << " "; 
+    }
+    cout << endl;*/
+
+    // now spearman
+    for (int type=0; type<NTYPE; type++) {
+        mean[type]=0.0;
+        mean[type+NTYPE]=0.0;
+        cov[type]=0.0;
+        var_dyn[type]=0.0;
+        var_struct[type]=0.0;
+    }
+    for (int i = 0; i < NS*N; i++) {
+        mean[type_data[i]] += rank_dyn[dyn_avg[i]];
+        mean[type_data[i]+NTYPE] += rank_struct[struct_array[i]];
+    }
+    for (int type=0; type<NTYPE; type++) {
+        mean[type] /= (double) NS*NPerType[type];
+        mean[type+NTYPE] /= (double) NS*NPerType[type];
+    }
+    // now calculate covariances and variances
+    for (int i = 0; i < NS*N; i++) {
+        cov[type_data[i]] += (rank_dyn[dyn_avg[i]]-mean[type_data[i]])*(rank_struct[struct_array[i]]-mean[type_data[i]+NTYPE]);
+        var_dyn[type_data[i]] += (rank_dyn[dyn_avg[i]]-mean[type_data[i]])*(rank_dyn[dyn_avg[i]]-mean[type_data[i]]);
+        var_struct[type_data[i]] += (rank_struct[struct_array[i]]-mean[type_data[i]+NTYPE])*(rank_struct[struct_array[i]]-mean[type_data[i]+NTYPE]);
+    }
+    for (int type=0; type<NTYPE; type++) {
+        dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal][type+3*NTYPE]= cov[type]/sqrt(var_dyn[type]*var_struct[type]);
+    }
+
 }
 
-void print_isoconf(int loc, std::string dyn){
+void print_isoconf(int loc){
 
     QString pathOrig = QString::fromStdString(folderOut);
 
     // print predictabilities
     QString pathPred = pathOrig;
-    pathPred.append(QString("/isoconf_predictability_%1.dat").arg(QString::fromStdString(dyn)));
+    pathPred.append(QString("/isoconf_predictability_%1.dat").arg(QString::fromStdString(DynNames[loc])));
     QFile outfilePred(pathPred);   // input file with xyz
     outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream outPred(&outfilePred);
     for (int t=1; t<NT; t++) {
         outPred << time_data[t]*timestep << " ";
         for (int type=0; type<NTYPE; type++) {
-            for (int j = 0; j < 5; j++) {
-                outPred << dyn_pred[t][5*type + j] << " ";
+            for (int j = 0; j < 6; j++) {
+                outPred << dyn_pred[t][6*type + j] << " ";
             }
         }
         outPred << "\n";
     }
     outfilePred.close();
 
+    // print information theory and correlation coefficients
+    for (int j = 0; j < NStructTotal; j++) {
+      for (int c = 0; c < NCG; c++) {
+        QString pathPred = pathOrig;
+        pathPred.append(QString("/isoconf_correlation_%1_%2_%3.dat").arg(QString::fromStdString(DynNames[loc])).arg(QString::fromStdString(StructNames[j])).arg(c));
+        QFile outfilePred(pathPred);   // input file with xyz
+        outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
+        QTextStream outPred(&outfilePred);
+        for (int t=1; t<NT; t++) {
+            outPred << time_data[t]*timestep << " ";
+            for (int type=0; type<NTYPE; type++) {
+                for (int k = 0; k < 6; k++) {
+                    outPred << dyn_struct_pred[j*NCG+c+t*NCG*NStructTotal][type+k*NTYPE] << " ";
+                }
+            }
+            outPred << "\n";
+        }
+        outfilePred.close();
+      }
+    }
+
+
     // print histograms
     double hist_lower = dyn_ranges[loc][0];
     double hist_upper = dyn_ranges[loc][1];
     QString pathHisto = pathOrig;
-    pathHisto.append(QString("/isoconf_histograms_%1.dat").arg(QString::fromStdString(dyn)));
+    pathHisto.append(QString("/isoconf_histograms_%1.dat").arg(QString::fromStdString(DynNames[loc])));
     QFile outfileHisto(pathHisto);   // input file with xyz
     outfileHisto.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream outHisto(&outfileHisto);
