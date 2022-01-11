@@ -47,6 +47,8 @@ void eval_struct_soft_modes(){
     xyz_inherent_data[i+s*N][d1] += delta;
     xyz_inherent_data[j+s*N][d2] -= delta;
     std::cout << hessian[s*N*N+i*N+j][d1*dim+d2] << " " << 0.25/delta/delta*(epot_ip1_jp1-epot_im1_jp1-epot_ip1_jm1+epot_im1_jm1) << std::endl;*/
+
+    // calculate eigen decomposition
 }
 
 
