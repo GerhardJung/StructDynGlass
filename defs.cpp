@@ -25,6 +25,8 @@ double qisf;                // length scale for isf
 
 int msd_flag=-1;            // flag for dynamical variables (msd)
 
+int rp_flag=-1;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
+
 int NStruct;          // number of strctural observables to be analyzed
 int NStructTotal;
 std::string * StructNames; 
@@ -35,6 +37,8 @@ double rcut2;            // cutoff for neighbor search
 
 int struct_soft_modes_flag=-1;       // flag for structural descriptors connected to soft modes
 double ** hessian;           // hessian matrix for soft mode analysis
+double ** hessian_evectors;           // eigenvectors of the hessian matrix
+double * hessian_evalues;      // eigenvalues of the hessian matrix
 
 // DATA
 int N;                      // number of particles
@@ -65,6 +69,7 @@ double **struct_base_ang_classifier;
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 double **dyn_ranges;
+double **dyn_ranges_time;
 double **dyn_hist_iso;
 double **dyn_hist_val;
 double **struct_ranges;
@@ -95,10 +100,13 @@ void allocate_storage(){
 
     struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
     hessian = dmatrix(0,NS*N*N-1,0,dim*dim-1);
+    hessian_evectors = dmatrix(0,NS*N*dim-1,0,N*dim-1);
+    hessian_evalues = dvector(0,NS*N*dim-1);
 
     // allocate dyn-struct correlation data and histogramms
     dyn_hist_iso = dmatrix(0,NT-1,0,NTYPE*NHisto-1);
     dyn_hist_val = dmatrix(0,NT-1,0,NTYPE*NHisto-1);
+    dyn_ranges_time = dmatrix(0,NDyn-1,0,NT*2-1);
     struct_ranges = dmatrix(0,NCG*NStructTotal-1,0,1);
     struct_hist = dmatrix(0,NCG*NStructTotal-1,0,NTYPE*NHistoStruct-1);
     dyn_struct_hist_iso = dmatrix(0,NTYPE-1,0,NHisto*NHistoStruct-1);

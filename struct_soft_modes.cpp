@@ -2,6 +2,9 @@
 #include "struct_base.h"
 #include "defs.h"
 #include "pbc.h"
+#include <Eigen/Dense>
+
+using namespace Eigen;
 
 void eval_struct_soft_modes(){
 
@@ -49,6 +52,54 @@ void eval_struct_soft_modes(){
     std::cout << hessian[s*N*N+i*N+j][d1*dim+d2] << " " << 0.25/delta/delta*(epot_ip1_jp1-epot_im1_jp1-epot_ip1_jm1+epot_im1_jm1) << std::endl;*/
 
     // calculate eigen decomposition
+    MatrixXd Eigen_hessian = MatrixXd::Zero(N*dim,N*dim);
+    for (int s=0; s<NS;s++) { // loop over structures
+        for (int i=0; i<N;i++) { // loop over particles
+            for (int d1=0; d1<dim;d1++) {
+                for (int j=0; j<N;j++) { // loop over particles
+                    for (int d2=0; d2<dim;d2++) {
+                        Eigen_hessian(i*d1,j*d2) = hessian[s*N*N+i*N+j][d1*dim+d2];
+                    }
+                }
+            }
+        }
+
+        // the actual eigen decomposition
+        EigenSolver<MatrixXd> Eigen_decomposition(Eigen_hessian);
+        std::cout << "The largest eigenvalues of A is:" << std::endl << Eigen_decomposition.eigenvalues()[0] << std::endl;
+        VectorXcd vT = Eigen_decomposition.eigenvectors().col(0);
+        std::cout << "The corresponding eigenvector is:" << std::endl << vT << std::endl; 
+
+        for (int k=0; k<N*dim;k++) { 
+            hessian_evalues[s*N*dim+k] = Eigen_decomposition.eigenvalues()[N*dim-1-k].real();
+            VectorXcd vT = Eigen_decomposition.eigenvectors().col(N*dim-1-k);
+            for (int i=0; i<N*dim;i++) { 
+                hessian_evectors[s*N*dim+k][i] = vT(i).real();
+            }
+        }
+    }
+
+    // calculate participation ratio for lowest frequency modes
+    for (int s=0; s<NS;s++) {
+        for (int i=0; i<N;i++) {
+            struct_local[NCG*(struct_soft_modes_flag)][i+s*N] = 0.0;
+            for (int k=0; k<NLOW;k++) {
+                // generalize to dim dimensions!
+                for (int di=0; di<dim;di++) struct_local[NCG*(struct_soft_modes_flag)][i+s*N] += hessian_evectors[s*N*dim+k][i*dim+di]*hessian_evectors[s*N*dim+k][i*dim+di];
+            }   
+        }
+    }
+
+    // calculate vibrality
+    for (int s=0; s<NS;s++) {
+        for (int i=0; i<N;i++) {
+            struct_local[NCG*(struct_soft_modes_flag+1)][i+s*N] = 0.0;
+            for (int k=0; k<N*dim;k++) {
+                for (int di=0; di<dim;di++) struct_local[NCG*(struct_soft_modes_flag+1)][i+s*N] += hessian_evectors[s*N*dim+k][i*dim+di]*hessian_evectors[s*N*dim+k][i*dim+di];
+                struct_local[NCG*(struct_soft_modes_flag+1)][i+s*N] /= hessian_evalues[s*N*dim+k]*hessian_evalues[s*N*dim+k];
+            }   
+        }
+    }
 }
 
 
@@ -89,8 +140,8 @@ void calc_2Depot(int i, int j, double * result) {
                 double sigma2= sigma*sigma;
                 double rij6i = sigma2*sigma2*sigma2*rij2i*rij2i*rij2i;
                 double rij12i = rij6i*rij6i;
-                double c2 = C2 / (sigma2);
-                double c4 = C4 / (sigma2*sigma2);
+                double c2 = C2LJ / (sigma2);
+                double c4 = C4LJ / (sigma2*sigma2);
                 for (int d1=0; d1<dim;d1++) {
                     for (int d2=0; d2<dim;d2++) {
                         if (d1==d2) result_loc[d1*dim+d2] = 2.0*c2 + 8.0*c4*dx[d1]*dx[d1] + 4.0*c4*dr + 168.0*dx[d1]*dx[d1]*rij12i*rij2i*rij2i - 12.0*rij12i*rij2i - 48.0*dx[d1]*dx[d1]*rij6i*rij2i*rij2i + 6.0*rij6i*rij2i;
@@ -126,8 +177,8 @@ void calc_2Depot(int i, int j, double * result) {
             double sigma2= sigma*sigma;
             double rij6i = sigma2*sigma2*sigma2*rij2i*rij2i*rij2i;
             double rij12i = rij6i*rij6i;
-            double c2 = C2 / (sigma2);
-            double c4 = C4 / (sigma2*sigma2);
+            double c2 = C2LJ / (sigma2);
+            double c4 = C4LJ / (sigma2*sigma2);
             for (int d1=0; d1<dim;d1++) {
                 for (int d2=0; d2<dim;d2++) {
                     if (d1==d2) result_loc[d1*dim+d2] = 2.0*c2 + 8.0*c4*dx[d1]*dx[d1] + 4.0*c4*dr + 168.0*dx[d1]*dx[d1]*rij12i*rij2i*rij2i - 12.0*rij12i*rij2i - 48.0*dx[d1]*dx[d1]*rij6i*rij2i*rij2i + 6.0*rij6i*rij2i;

@@ -269,6 +269,6 @@ double calc_epot(int iType, int jType, double dist2) {
         double rij4 = rij2*rij2;
         double rij6 = 1.0/(rij4*rij2);
         double rij12 = rij6*rij6;
-        return 4.0*epsilon*(C0+C2*rij2+C4*rij4 - rij6 + rij12 ) ;
+        return 4.0*epsilon*(C0LJ+C2LJ*rij2+C4LJ*rij4 - rij6 + rij12 ) ;
     } else return 0.0;
 }

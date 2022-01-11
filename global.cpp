@@ -89,10 +89,7 @@ void calc_bonds_histograms_structure(){
       for (int c = 0; c < NCG; c++) {
         struct_loc = struct_local[j*NCG+c];
         //if (j==0 && c==2) std::cout << struct_ranges[j*NCG+c][0] << " " << struct_ranges[j*NCG+c][1] << " " << struct_loc[2] << std::endl;
-        for (int i=0; i<N*NS; i++) { // find minima and maxima
-          if (struct_loc[i] < struct_ranges[j*NCG+c][0]) struct_ranges[j*NCG+c][0] = struct_loc[i];
-          if (struct_loc[i] > struct_ranges[j*NCG+c][1]) struct_ranges[j*NCG+c][1] = struct_loc[i];
-        }
+        calc_bonds(struct_loc,struct_ranges[j*NCG+c]);
         //if (j==0 && c==2) std::cout << struct_ranges[j*NCG+c][0] << " " << struct_ranges[j*NCG+c][1] << std::endl;
 
         // calculate histograms
@@ -110,4 +107,15 @@ void calc_bonds_histograms_structure(){
       }
     }
 
+}
+
+
+// help functions
+void calc_bonds(double * input, double * output){
+  output[0] = 10000.0;
+  output[1] = -10000.0;
+  for (int i=0; i<N*NS; i++) { // find minima and maxima
+    if (input[i] < output[0]) output[0] = input[i];
+    if (input[i] > output[1]) output[1] = input[i];
+  }
 }

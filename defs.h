@@ -44,6 +44,8 @@ extern double qisf;                // length scale for isf
 
 extern int msd_flag;            // flag for dynamical variables (msd)
 
+extern int rp_flag;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
+
 extern int NStruct;          // number of strctural observables to be analyzed
 extern int NStructTotal;
 extern std::string * StructNames; 
@@ -54,6 +56,8 @@ extern double rcut2;            // cutoff for neighbor search
 
 extern int struct_soft_modes_flag;       // flag for structural descriptors connected to soft modes
 extern double ** hessian;           // hessian matrix for soft mode analysis
+extern double ** hessian_evectors;           // eigenvectors of the hessian matrix
+extern double * hessian_evalues;      // eigenvalues of the hessian matrix
 
 // DATA
 extern int N;                      // number of particles
@@ -85,6 +89,7 @@ extern double **struct_base_ang_classifier;
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 extern double **dyn_ranges;
+extern double **dyn_ranges_time;
 extern double **dyn_hist_iso;
 extern double **dyn_hist_val;
 extern double **struct_ranges;

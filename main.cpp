@@ -116,7 +116,7 @@
                     StructNames[struct_base_flag+3] = "PSI6";
                     StructNames[struct_base_flag+4] = "TT";
                 }     else if (parts[0] == "SM") {
-                    NStructTotal+=1;
+                    NStructTotal+=2;
                     struct_soft_modes_flag = NStructTotal;
                     StructNames[struct_soft_modes_flag] = "SM";
                 }

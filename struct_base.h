@@ -2,9 +2,9 @@
 #define STRUCT_BASE_H
 
 #define RC2 6.25
-#define C0 0.04049023795
-#define C2 -0.00970155098
-#define C4 0.00062012616
+#define C0LJ 0.04049023795
+#define C2LJ -0.00970155098
+#define C4LJ 0.00062012616
 
 void eval_struct_base();
 
