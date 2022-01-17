@@ -1,7 +1,8 @@
 #ifndef STRUCT_SOFT_MODES_H
 #define STRUCT_SOFT_MODES_H
 
-#define NLOW 50
+#define NLOW 30
+#define SM_CUTOFF 0.2
 
 void eval_struct_soft_modes();
 

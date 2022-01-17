@@ -55,9 +55,17 @@ extern int NHistoGr;
 extern double rcut2;            // cutoff for neighbor search
 
 extern int struct_soft_modes_flag;       // flag for structural descriptors connected to soft modes
+extern int NHistoSM;                    // number of histogram bins used for density of states evaluation
+extern double Pcut;                 // cutoff for quasilocalized modes
 extern double ** hessian;           // hessian matrix for soft mode analysis
 extern double ** hessian_evectors;           // eigenvectors of the hessian matrix
 extern double * hessian_evalues;      // eigenvalues of the hessian matrix
+extern double ** sm_histograms;
+extern double * participation_ratio;
+extern int modeSM;
+
+extern int struct_filion_flag;
+extern int struct_filion_mode;
 
 // DATA
 extern int N;                      // number of particles
@@ -84,8 +92,8 @@ extern double **dyn_avg_save;
 extern double **struct_local;
 
 extern double **struct_base_gr;
-extern double **struct_base_rad_classifier;
-extern double **struct_base_ang_classifier;
+
+extern double **struct_filion_classifiers;
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 extern double **dyn_ranges;
@@ -97,6 +105,8 @@ extern double **struct_hist;
 extern double **dyn_struct_hist_iso;
 extern double **dyn_struct_hist_val;
 extern double **dyn_struct_pred;
+
+
 
 // Functions
 void allocate_storage();

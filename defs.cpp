@@ -28,7 +28,7 @@ int msd_flag=-1;            // flag for dynamical variables (msd)
 int rp_flag=-1;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
 
 int NStruct;          // number of strctural observables to be analyzed
-int NStructTotal;
+int NStructTotal=0;
 std::string * StructNames; 
 
 int struct_base_flag=-1;       // flag for the very basic structural descriptors
@@ -36,9 +36,17 @@ int NHistoGr;
 double rcut2;            // cutoff for neighbor search
 
 int struct_soft_modes_flag=-1;       // flag for structural descriptors connected to soft modes
+int NHistoSM;                    // number of histogram bins used for density of states evaluation
+double Pcut;                 // cutoff for quasilocalized modes
 double ** hessian;           // hessian matrix for soft mode analysis
 double ** hessian_evectors;           // eigenvectors of the hessian matrix
 double * hessian_evalues;      // eigenvalues of the hessian matrix
+double ** sm_histograms;
+int modeSM;
+double * participation_ratio;
+
+int struct_filion_flag=-1;
+int struct_filion_mode;
 
 // DATA
 int N;                      // number of particles
@@ -93,7 +101,7 @@ void allocate_storage(){
     dyn_avg = dvector(0,N*NS-1);
     dyn_avg2 = dvector(0,N*NS-1);
     dyn_pred = dmatrix(0,NT-1,0,6*NTYPE-1);
-    dyn_avg_save = dmatrix(0,NDyn*N*NS-1,0,NT-1);
+    dyn_avg_save = dmatrix(0,N*NS-1,0,NDyn*NT-1);
 
     // allocate struct data
     struct_local = dmatrix(0,NStructTotal*NCG-1,0,N*NS-1);
@@ -102,6 +110,8 @@ void allocate_storage(){
     hessian = dmatrix(0,NS*N*N-1,0,dim*dim-1);
     hessian_evectors = dmatrix(0,NS*N*dim-1,0,N*dim-1);
     hessian_evalues = dvector(0,NS*N*dim-1);
+    sm_histograms = dmatrix(0,NHistoSM-1,0,2);
+    participation_ratio = dvector(0,NS*N*dim-1);
 
     // allocate dyn-struct correlation data and histogramms
     dyn_hist_iso = dmatrix(0,NT-1,0,NTYPE*NHisto-1);

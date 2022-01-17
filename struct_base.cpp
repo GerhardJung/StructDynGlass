@@ -48,7 +48,7 @@ void eval_struct_base(){
                 }
 
                 // calculate epot
-                if (i!=j) struct_local[NCG*(struct_base_flag+1)][i+s*N] += calc_epot(iType, jType, dr);
+                if (i!=j) struct_local[NCG*(struct_base_flag+1)][i+s*N] += 0.5*calc_epot(iType, jType, dr);
                 
             } 
 
@@ -217,21 +217,25 @@ void eval_den_cg(){
                     if (L < 0.1) L = 0.1;
                     double w = exp(-dr/L);
                     mean_den[c] += w;
-                    mean_epot[c] += w*struct_local[NCG*(struct_base_flag+1)][j+s*N]/2.0;
+                    mean_epot[c] += w*struct_local[NCG*(struct_base_flag+1)][j+s*N];
                     mean_psi[2*c] += w*struct_local[NCG*(struct_base_flag+2)][j+s*N];
                     mean_psi[2*c+1] += w*struct_local[NCG*(struct_base_flag+3)][j+s*N];
                     mean_theta_tanaka[c]+= w*struct_local[NCG*(struct_base_flag+4)][j+s*N];
                 }
             }
 
+            //std::cout << mean_epot[0]/mean_den[0] << " " << mean_epot[1]/mean_den[1] << " " << mean_epot[2]/mean_den[2] << " " << mean_epot[3]/mean_den[3] << std::endl;
+
             for (int c=0; c<NCG; c++) {
                 double L = c;
                 if (L < 0.1) L = 0.1;
                 struct_local[NCG*(struct_base_flag)+c][i+s*N] = mean_den[c]/((L+1.0)*(L+1.0)*(L+1.0) );
-                struct_local[NCG*(struct_base_flag+1)+c][i+s*N] = mean_epot[c]/mean_den[c];
-                struct_local[NCG*(struct_base_flag+2)+c][i+s*N] = mean_psi[2*c]/mean_den[c];
-                struct_local[NCG*(struct_base_flag+3)+c][i+s*N] = mean_psi[2*c+1]/mean_den[c];
-                struct_local[NCG*(struct_base_flag+4)+c][i+s*N] = mean_theta_tanaka[c]/mean_den[c];
+                if(c>0) {
+                    struct_local[NCG*(struct_base_flag+1)+c][i+s*N] = mean_epot[c]/mean_den[c];
+                    struct_local[NCG*(struct_base_flag+2)+c][i+s*N] = mean_psi[2*c]/mean_den[c];
+                    struct_local[NCG*(struct_base_flag+3)+c][i+s*N] = mean_psi[2*c+1]/mean_den[c];
+                    struct_local[NCG*(struct_base_flag+4)+c][i+s*N] = mean_theta_tanaka[c]/mean_den[c];
+                }
             }
 
         }

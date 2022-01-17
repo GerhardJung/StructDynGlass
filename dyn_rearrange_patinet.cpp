@@ -1,5 +1,6 @@
 
-#include "dyn_rearrange_patinet h"
+#include "dyn_rearrange_patinet.h"
+#include "struct_soft_modes.h"
 #include "global.h"
 #include "defs.h"
 #include "pbc.h"
@@ -8,6 +9,17 @@
 void eval_rp(){
 
     int flag = rp_flag;
+
+    if (struct_soft_modes_flag==-1) {
+        // calculate hessian
+        for (int s=0; s<NS;s++) { // loop over structures
+            for (int i=0; i<N;i++) { // loop over particles
+                for (int j=0; j<N;j++) { // loop over particles
+                    calc_2Depot(i+s*N,j+s*N,hessian[s*N*N+i*N+j]);
+                }
+            }
+        }
+    }
 
     // loop over time
     for (int t=1; t<NT; t++) {
@@ -53,11 +65,11 @@ void eval_rp(){
                                 flin[di+i*dim] += hessian[s*N*N+i*N+j][dj+di*dim]*uth[dj+j*dim];
                             }
                         }
-                        double fres = 0.0;
-                        for (int di=0; di<dim;di++) fres += flin[di+i*dim]*flin[di+i*dim];
-                        fres = sqrt(fres);
-                        add_histogram_avg(s,i,dyn_ranges_time[flag][2*t],dyn_ranges_time[flag][2*t+1],fres);
                     }
+                    double fres = 0.0;
+                    for (int di=0; di<dim;di++) fres += flin[di+i*dim]*flin[di+i*dim];
+                    fres = sqrt(fres);
+                    add_histogram_avg(s,i,dyn_ranges_time[flag][2*t],dyn_ranges_time[flag][2*t+1],fres);
                 }
 
             }

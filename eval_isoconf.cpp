@@ -382,6 +382,7 @@ void print_isoconf(int loc){
         QFile outfilePred(pathPred);   // input file with xyz
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred(&outfilePred);
+        outPred << "Time Imut_val Imut_iso Kp Ks Rs Rtot\n";
         for (int t=1; t<NT; t++) {
             outPred << time_data[t]*timestep << " ";
             for (int type=0; type<NTYPE; type++) {
