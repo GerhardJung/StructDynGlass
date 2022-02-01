@@ -14,7 +14,7 @@ void eval_exp(){
         std::cout << "EVAL EXP " << t << std::endl; 
         reset_dyn(t);
 
-        if (dyn_ranges[flag][0] > -0.001) {
+        if (dyn_ranges[flag][0] > -10000.0) {
             dyn_ranges_time[flag][2*t] = dyn_ranges[flag][0];
             dyn_ranges_time[flag][2*t+1] = dyn_ranges[flag][1];
         } else { // determine binning from maximal and minimal values

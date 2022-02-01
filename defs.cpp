@@ -11,6 +11,7 @@ int NHisto;
 int NHistoStruct;           // number of bin in the histograms (structural observables)
 
 int NDyn;                   // number of dynamical observables to be analyzed
+int NDynTotal=0;               // number of final dynamical descriptors
 std::string * DynNames; 
 
 int bb_flag=-1;                // flags for dynamical observables
@@ -26,6 +27,7 @@ double qisf;                // length scale for isf
 int msd_flag=-1;            // flag for dynamical variables (msd)
 
 int rp_flag=-1;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
+double dyn_rearrange_threshold; //threshold to differentiate between active and inactive
 
 int NStruct;          // number of strctural observables to be analyzed
 int NStructTotal=0;
@@ -47,17 +49,22 @@ double * participation_ratio;
 
 int struct_filion_flag=-1;
 int struct_filion_mode;
+double ** struct_filion_descriptor_list;
 
 // DATA
 int N;                      // number of particles
 double boxL;
 int dim;
+std::string model;           // name of the potential model (for epot and hessian)
+int NTYPE;                   // number of different types
+double * type_cutoff;        // cutoffs to deal with polydisperse samples
 int NT;
 int * type_data;
+double * dia_data;             // particle diameters
 double ** xyz_data;
 double ** xyz_inherent_data;
 int * time_data;
-int * NPerType = new int[NTYPE];
+int * NPerType;
 
 double * global_properties;
 
@@ -72,8 +79,8 @@ double ** dyn_avg_save;
 double **struct_local;
 
 double **struct_base_gr;
-double **struct_base_rad_classifier;
-double **struct_base_ang_classifier;
+
+double **struct_filion_classifiers;
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 double **dyn_ranges;
@@ -90,9 +97,12 @@ void allocate_storage(){
 
     // allocate type and xyz data
     type_data = ivector(0,N*NS-1);
+    dia_data = dvector(0,N*NS-1);
+    NPerType = ivector(0,NTYPE-1);
     xyz_data = dmatrix(0,N*NS-1,0,NI*NT*dim-1);
     xyz_inherent_data = dmatrix(0,N*NS-1,0,NI*NT*dim-1);
     time_data = ivector(0,NT-1);
+
 
     global_properties = dvector(0,NTYPE*2-1);
 
@@ -100,28 +110,34 @@ void allocate_storage(){
     dyn_hist_data = dmatrix(0,N*NS-1,0,NHisto-1);
     dyn_avg = dvector(0,N*NS-1);
     dyn_avg2 = dvector(0,N*NS-1);
-    dyn_pred = dmatrix(0,NT-1,0,6*NTYPE-1);
-    dyn_avg_save = dmatrix(0,N*NS-1,0,NDyn*NT-1);
+    dyn_pred = dmatrix(0,NT*NDynTotal-1,0,6*NTYPE-1);
+    dyn_avg_save = dmatrix(0,N*NS-1,0,NDynTotal*NT-1);
 
     // allocate struct data
-    struct_local = dmatrix(0,NStructTotal*NCG-1,0,N*NS-1);
+    if (NStructTotal>0) struct_local = dmatrix(0,NStructTotal*NCG-1,0,N*NS-1);
 
     struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
     hessian = dmatrix(0,NS*N*N-1,0,dim*dim-1);
-    hessian_evectors = dmatrix(0,NS*N*dim-1,0,N*dim-1);
-    hessian_evalues = dvector(0,NS*N*dim-1);
-    sm_histograms = dmatrix(0,NHistoSM-1,0,2);
-    participation_ratio = dvector(0,NS*N*dim-1);
+    if(struct_soft_modes_flag>=0) {
+        hessian_evectors = dmatrix(0,NS*N*dim-1,0,N*dim-1);
+        hessian_evalues = dvector(0,NS*N*dim-1);
+          sm_histograms = dmatrix(0,NHistoSM-1,0,2);
+        participation_ratio = dvector(0,NS*N*dim-1);
+    }
+    if (struct_filion_flag >= 0) {
+        struct_filion_classifiers = dmatrix(0,N*NS-1,0,1000);
+        struct_filion_descriptor_list = dmatrix(0,300,0,2);
+    }
 
     // allocate dyn-struct correlation data and histogramms
-    dyn_hist_iso = dmatrix(0,NT-1,0,NTYPE*NHisto-1);
-    dyn_hist_val = dmatrix(0,NT-1,0,NTYPE*NHisto-1);
-    dyn_ranges_time = dmatrix(0,NDyn-1,0,NT*2-1);
-    struct_ranges = dmatrix(0,NCG*NStructTotal-1,0,1);
-    struct_hist = dmatrix(0,NCG*NStructTotal-1,0,NTYPE*NHistoStruct-1);
+    dyn_hist_iso = dmatrix(0,NT*NDynTotal-1,0,NTYPE*NHisto-1);
+    dyn_hist_val = dmatrix(0,NT*NDynTotal-1,0,NTYPE*NHisto-1);
+    dyn_ranges_time = dmatrix(0,NDynTotal-1,0,NT*2-1);
+    if (NStructTotal>0) struct_ranges = dmatrix(0,NCG*NStructTotal-1,0,1);
+    if (NStructTotal>0) struct_hist = dmatrix(0,NCG*NStructTotal-1,0,NTYPE*NHistoStruct-1);
     dyn_struct_hist_iso = dmatrix(0,NTYPE-1,0,NHisto*NHistoStruct-1);
     dyn_struct_hist_val = dmatrix(0,NTYPE-1,0,NHisto*NHistoStruct-1);
-    dyn_struct_pred = dmatrix(0,NCG*NStructTotal*NT-1,0,6*NTYPE-1);
+    if (NStructTotal>0) dyn_struct_pred = dmatrix(0,NCG*NStructTotal*NT*NDynTotal-1,0,6*NTYPE-1);
 
 
     // initialize data
@@ -129,6 +145,7 @@ void allocate_storage(){
         type_data[i] = 0;
         for (int j = 0; j < NI*NT*dim; j++) {
             xyz_data[i][j] = 0.0;
+            xyz_inherent_data[i][j] = 0.0;
         }
     }
 
@@ -157,6 +174,17 @@ void allocate_storage(){
                 struct_base_gr[i*NTYPE+j][k]=0.0;
             }
         }
+    }
+
+    for (int t=0; t<NT*NDynTotal; t++) {
+        for (int j=0; j<6*NTYPE; j++) dyn_pred[t][j] = 0.0;
+        for (int j=0; j<NTYPE*NHisto; j++) {
+            dyn_hist_iso[t][j] = 0.0;
+            dyn_hist_val[t][j] = 0.0;
+        }
+    }
+    for (int j = 0; j < NCG*NStructTotal*NDynTotal*NT; j++) {
+        for (int k = 0; k < 6*NTYPE; k++) dyn_struct_pred[j][k] = 0.0;
     }
 
 }

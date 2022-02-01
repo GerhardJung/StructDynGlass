@@ -14,7 +14,6 @@
 #include "nrutil.h"
 #include "read_write_lammps.h"
 
-#define NTYPE 3
 #define NCG 4
 
 #define EPS 0.000000001
@@ -30,6 +29,7 @@ extern int NHisto;                 // number of bin in the histograms (dynamical
 extern int NHistoStruct;           // number of bin in the histograms (structural observables)
 
 extern int NDyn;                   // number of dynamical observables to be analyzed
+extern int NDynTotal;               // number of final dynamical descriptors
 extern std::string * DynNames; 
 
 extern int bb_flag;                // flags for dynamical observables (bond-breaking)
@@ -45,6 +45,7 @@ extern double qisf;                // length scale for isf
 extern int msd_flag;            // flag for dynamical variables (msd)
 
 extern int rp_flag;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
+extern double dyn_rearrange_threshold; //threshold to differentiate between active and inactive
 
 extern int NStruct;          // number of strctural observables to be analyzed
 extern int NStructTotal;
@@ -66,13 +67,18 @@ extern int modeSM;
 
 extern int struct_filion_flag;
 extern int struct_filion_mode;
+extern double ** struct_filion_descriptor_list;
 
 // DATA
 extern int N;                      // number of particles
 extern double boxL;                // box size
 extern int dim;                    // number of dimensions
+extern std::string model;           // name of the potential model (for epot and hessian)
+extern int NTYPE;                   // number of different types
+extern double * type_cutoff;        // cutoffs to deal with polydisperse samples
 extern int NT;                     // number of timesteps
-extern int * type_data;
+extern int * type_data;             // particle types
+extern double * dia_data;             // particle diameters
 extern double ** xyz_data;
 extern double ** xyz_inherent_data;
 extern int * time_data;

@@ -52,13 +52,31 @@
                  NHistoStruct = parts[3].toInt();
                  break;
             }
-            case 4: {
+
+            case 4 : {
+                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
+                 dim = parts[0].toInt();
+                 model = parts[1].toStdString();
+                 NTYPE = parts[2].toInt();
+                 type_cutoff= dvector(0,NTYPE-2); 
+                 if (parts[3] == "DISCRETE") {
+                     type_cutoff[0] = -1.0;
+                 } else {
+                     for (int type=0;type<NTYPE-1; type++) {
+                         type_cutoff[type] = parts[3+type].toDouble();
+                     }
+                 }
+                 break;
+            }
+
+
+            case 5: {
                 NDyn = line.toInt();
-                dyn_ranges = dmatrix(0,NDyn-1,0,1);
-                DynNames = new std::string[NDyn];
+                dyn_ranges = dmatrix(0,NDyn+30-1,0,1);
+                DynNames = new std::string[NDyn+30];
                 break;
             }
-            case 5: {
+            case 6: {
 
                 if (NDyn == 0) {
                     line_counter++;
@@ -67,65 +85,99 @@
 
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BB") {
-                    bb_flag = Ndyn_loc;
+                    bb_flag = NDynTotal;
+                    NDynTotal+=1;
                     rcuti2 = parts[1].toDouble()*parts[1].toDouble();
                     rcuto2 = parts[2].toDouble()*parts[2].toDouble();
                     dyn_ranges[bb_flag][0] = parts[3].toDouble();
                     dyn_ranges[bb_flag][1] = parts[4].toDouble();
                     DynNames[bb_flag] = "BB";
                 } else if (parts[0] == "EXP") {
-                    exp_flag = Ndyn_loc;
+                    exp_flag = NDynTotal;
+                    NDynTotal+=1;
                     exp_scale4i = parts[1].toDouble();
                     exp_scale4i = 1.0/(exp_scale4i*exp_scale4i*exp_scale4i*exp_scale4i);
                     dyn_ranges[exp_flag][0] = parts[2].toDouble();
                     dyn_ranges[exp_flag][1] = parts[3].toDouble();
                     DynNames[exp_flag] = "EXP";
                 }  else if (parts[0] == "ISF") {
-                    isf_flag = Ndyn_loc;
+                    isf_flag = NDynTotal;
+                    NDynTotal+=1;
                     qisf = parts[1].toDouble();
                     dyn_ranges[isf_flag][0] = parts[2].toDouble();
                     dyn_ranges[isf_flag][1] = parts[3].toDouble();
                     DynNames[isf_flag] = "ISF";
                 }  else if (parts[0] == "MSD") {
-                    msd_flag = Ndyn_loc;
+                    msd_flag = NDynTotal;
+                    NDynTotal+=2;
                     if (parts[1] != "DYN") {
                         dyn_ranges[msd_flag][0] = parts[1].toDouble();
                         dyn_ranges[msd_flag][1] = parts[2].toDouble();
                     } else {
-                        dyn_ranges[msd_flag][0] = - 1.0; // calculate ranges dynamically
+                        dyn_ranges[msd_flag][0] = - 10001.0; // calculate ranges dynamically
                     }
-                    DynNames[msd_flag] = "MSD";
-                }  else if (parts[0] == "RP") {
-                    rp_flag = Ndyn_loc;
-                    if (parts[1] != "DYN") {
-                        dyn_ranges[rp_flag][0] = parts[1].toDouble();
-                        dyn_ranges[rp_flag][1] = parts[2].toDouble();
+                    if (parts[3] != "DYN") {
+                        dyn_ranges[msd_flag+1][0] = parts[3].toDouble();
+                        dyn_ranges[msd_flag+1][1] = parts[4].toDouble();
                     } else {
-                        dyn_ranges[rp_flag][0] = - 1.0; // calculate ranges dynamically
+                        dyn_ranges[msd_flag+1][0] = - 10001.0; // calculate ranges dynamically
                     }
-                    DynNames[rp_flag] = "RP";
+                    DynNames[msd_flag] = "MD";
+                    DynNames[msd_flag+1] = "LOG(MD)";
+                }  else if (parts[0] == "RP") {
+                    rp_flag = NDynTotal;
+                    NDynTotal+=3;
+                    dyn_rearrange_threshold = parts[1].toDouble();
+                    if (parts[2] != "DYN") {
+                        dyn_ranges[rp_flag][0] = parts[2].toDouble();
+                        dyn_ranges[rp_flag][1] = parts[3].toDouble();
+                    } else {
+                        dyn_ranges[rp_flag][0] = - 10001.0; // calculate ranges dynamically
+                    }
+                    if (parts[4] != "DYN") {
+                        dyn_ranges[rp_flag+1][0] = parts[4].toDouble();
+                        dyn_ranges[rp_flag+1][1] = parts[5].toDouble();
+                    } else {
+                        dyn_ranges[rp_flag+1][0] = - 10001.0; // calculate ranges dynamically
+                    }
+                    if (parts[6] != "DYN") {
+                        dyn_ranges[rp_flag+2][0] = parts[6].toDouble();
+                        dyn_ranges[rp_flag+2][1] = parts[7].toDouble();
+                    } else {
+                        dyn_ranges[rp_flag+2][0] = - 10001.0; // calculate ranges dynamically
+                    }
+                    DynNames[rp_flag] = "LOG(UTH)";
+                    DynNames[rp_flag+1] = "LOG(FRES)";
+                    DynNames[rp_flag+2] = "RP";
                 }  
 
                 Ndyn_loc ++;
                 break;
             }
-            case 6: {
+            case 7: {
                 NStruct = line.toInt();
-                StructNames = new std::string[NStruct+10];
+                StructNames = new std::string[NStruct+30];
                 break;
             }
-            case 7: {
+            case 8: {
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BASE") {
                     struct_base_flag = NStructTotal;
-                    NStructTotal += 5;
+                    NStructTotal += 18;
                     NHistoGr = parts[1].toInt();
                     rcut2 = parts[2].toDouble()*parts[2].toDouble();
                     StructNames[struct_base_flag] = "DEN";
-                    StructNames[struct_base_flag+1] = "EPOT";
-                    StructNames[struct_base_flag+2] = "PSI5";
-                    StructNames[struct_base_flag+3] = "PSI6";
+                    StructNames[struct_base_flag+2] = "EPOT";
                     StructNames[struct_base_flag+4] = "TT";
+                    StructNames[struct_base_flag+6] = "PSI4";
+                    StructNames[struct_base_flag+8] = "PSI5";
+                    StructNames[struct_base_flag+10] = "PSI6";
+                    StructNames[struct_base_flag+12] = "PSI7";
+                    StructNames[struct_base_flag+14] = "PSI8";
+                    StructNames[struct_base_flag+16] = "PSI9";
+                    for (int k=0; k<9; k++) {
+                        StructNames[struct_base_flag+2*k+1] = StructNames[struct_base_flag+2*k] + "_INH";
+                    }
                 }     else if (parts[0] == "SM") {
                     struct_soft_modes_flag = NStructTotal;
                     NStructTotal+=2;
@@ -135,7 +187,7 @@
                     else modeSM = 0;
                     StructNames[struct_soft_modes_flag] = "SM";
                     StructNames[struct_soft_modes_flag+1] = "VIB";
-                } else if (parts[0] == "ML_FILION") {
+                } else if (parts[0] == "MLFILION") {
                     struct_filion_flag = NStructTotal;
                     NStructTotal+=1;
                     if (parts[1] == "WRITE") struct_filion_mode = 0;
@@ -148,11 +200,11 @@
             }
         }
         line_counter++;
-        if (line_counter == 6) {
+        if (line_counter == 7) {
             // jump back if there are still more dyn variables to come
             if (Ndyn_loc < NDyn) line_counter--;
         }
-        if (line_counter == 8) {
+        if (line_counter == 9) {
             // jump back if there are still more dyn variables to come
             if (Nstruct_loc < NStruct) line_counter--;
         }
@@ -170,13 +222,13 @@
     if (bb_flag>=0) std::cout << "    " << bb_flag << ": Bond-Breaking " << sqrt(rcuti2) << " " << sqrt(rcuto2) << std::endl;
     if (exp_flag>=0) std::cout << "    " << exp_flag << ": Exponential Decay" << " " << sqrt(sqrt(1.0/exp_scale4i)) << std::endl;
     if (isf_flag>=0) std::cout << "    " << isf_flag << ": Intermediate Scattering Function" << " " << qisf << std::endl;
-    if (msd_flag>=0) std::cout << "    " << msd_flag << ": Mean Squared Displacement"  << std::endl;
+    if (msd_flag>=0) std::cout << "    " << msd_flag << ": Mean Displacement"  << std::endl;
     if (rp_flag>=0) std::cout << "    " << rp_flag << ": Patinet Rearrangement Detection" << std::endl;
 
     std::cout << "EVALUATE " << Nstruct_loc << " statical descriptors:" << std::endl;
-    if (struct_base_flag>=0) std::cout << "    Base" << " " << NHistoGr  << std::endl;
-    if (struct_soft_modes_flag>=0) std::cout << "    Soft Modes" << std::endl;
-    if (struct_filion_flag>=0) std::cout << "    ML Filion" << std::endl;
+    if (struct_base_flag>=0) std::cout << "    " << struct_base_flag << ": Base" << " " << NHistoGr  << std::endl;
+    if (struct_soft_modes_flag>=0) std::cout << "    " << struct_soft_modes_flag << ": Soft Modes" << std::endl;
+    if (struct_filion_flag>=0) std::cout << "    " << struct_filion_flag << ": ML Filion" << std::endl;
 
     // read files
     read_files_lammps();
@@ -196,6 +248,9 @@
     if (isf_flag>=0) eval_isf();
     if (msd_flag>=0) eval_msd();
     if (rp_flag>=0) eval_rp();
+
+    // print learning batches for machine learning
+    if (struct_filion_flag >= 0 && struct_filion_mode==0) write_descriptors_csv();
 
     // print xyz
     print_xyz_isoconf();

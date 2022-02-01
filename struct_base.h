@@ -13,8 +13,8 @@ void calc_psi(int ** neighbors);
 void eval_den_cg();
 
 // help function
-double determine_sigma(int iType, int jType);
+double determine_sigma(int i, int j);
 double determine_epsilon(int iType, int jType);
-double calc_epot(int iType, int jType,  double dist2);
+double calc_epot(int i, int j,  double dist2);
 
 #endif
