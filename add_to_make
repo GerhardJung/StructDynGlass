@@ -1,5 +1,5 @@
 CC            = gcc
 CXX           = g++ -I ../eigen_library
-DEFINES       = -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED
-CFLAGS        = -m64 -pipe -O2 -Wall -W -g -D_REENTRANT $(DEFINES)
-CXXFLAGS      = -m64 -pipe -O2 -Wall -W -g -D_REENTRANT $(DEFINES)
+DEFINES       = -DQT_DEPRECATED_WARNINGS -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB
+CFLAGS        = -pipe -O2 -Wall -W -g -w -D_REENTRANT -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -O2 -Wall -W -g -w -D_REENTRANT -fPIC $(DEFINES)

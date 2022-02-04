@@ -334,7 +334,7 @@ double calc_epot(int i, int j, double dist2) {
     double epsilon = determine_epsilon(type_data[i], type_data[j]);
 
     if(model=="KA2" || model=="KA2-2D") {
-        if (dist2 < RC2 ) {
+        if (dist2 < RC2LJ*sigma ) {
             double rij2 = dist2/(sigma*sigma);
             double rij4 = rij2*rij2;
             double rij6 = 1.0/(rij4*rij2);
@@ -343,13 +343,13 @@ double calc_epot(int i, int j, double dist2) {
             return 4.0*epsilon*(C0LJ+C2LJ*rij2+C4LJ*rij4 - rij6 + rij12 ) ;
         } 
     } if(model=="POLY") {
-        if (dist2 < RC2 ) {
+        if (dist2 < RC2POLY*sigma ) {
             double rij2 = dist2/(sigma*sigma);
             double rij4 = rij2*rij2;
             double rij6 = 1.0/(rij4*rij2);
             double rij12 = rij6*rij6;
             // TODO: Adapt constants
-            return 4.0*epsilon*(C0LJ+C2LJ*rij2+C4LJ*rij4 + rij12 ) ;
+            return 4.0*epsilon*(C0POLY+C2POLY*rij2+C4POLY*rij4 + rij12 ) ;
         } 
     } else return 0.0;
 }

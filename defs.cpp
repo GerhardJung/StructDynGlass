@@ -28,6 +28,7 @@ int msd_flag=-1;            // flag for dynamical variables (msd)
 
 int rp_flag=-1;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
 double dyn_rearrange_threshold; //threshold to differentiate between active and inactive
+double * save_pat;
 
 int NStruct;          // number of strctural observables to be analyzed
 int NStructTotal=0;
@@ -50,6 +51,10 @@ double * participation_ratio;
 int struct_filion_flag=-1;
 int struct_filion_mode;
 double ** struct_filion_descriptor_list;
+
+int struct_read_flag=-1;
+int struct_read_Ntotal;
+std::string struct_read_file;
 
 // DATA
 int N;                      // number of particles
@@ -104,7 +109,7 @@ void allocate_storage(){
     time_data = ivector(0,NT-1);
 
 
-    global_properties = dvector(0,NTYPE*2-1);
+    global_properties = dvector(0,NTYPE*5-1);
 
     // allocate dyn data
     dyn_hist_data = dmatrix(0,N*NS-1,0,NHisto-1);
@@ -163,7 +168,7 @@ void allocate_storage(){
 
     for (int j = 0; j < NTYPE; j++) {
         NPerType[j] = 0;
-        for (int k=0; k<2; k++) {
+        for (int k=0; k<5; k++) {
             global_properties[k*NTYPE+j] = 0.0;
         }
     }

@@ -86,7 +86,9 @@ void eval_msd(){
                     if (dr < 10e-6) dr = 10e-6;
                     dr = log10(dr);
                     //std::cout << dr << std::endl;
-                    add_histogram_avg(s,i,dyn_ranges_time[flag+1][2*t],dyn_ranges_time[flag+1][2*t+1],dr);
+                    //if (save_pat[2*NS*NI*N+s*N*NI+j*N+i] < 0.5) {
+                        add_histogram_avg(s,i,dyn_ranges_time[flag+1][2*t],dyn_ranges_time[flag+1][2*t+1],dr);
+                    //}
                 }
             }
         }

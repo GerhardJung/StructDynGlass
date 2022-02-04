@@ -5,24 +5,14 @@
 #include "defs.h"
 #include "pbc.h"
 #include "eval_isoconf.h"
+#include <stdlib.h>     /* srand, rand */
 
 void eval_rp(){
 
     int flag = rp_flag;
 
-    if (struct_soft_modes_flag==-1) {
-        // calculate hessian
-        for (int s=0; s<NS;s++) { // loop over structures
-            for (int i=0; i<N;i++) { // loop over particles
-                for (int j=0; j<N;j++) { // loop over particles
-                    calc_2Depot(i+s*N,j+s*N,hessian[s*N*N+i*N+j]);
-                }
-            }
-        }
-    }
-
     // loop over time
-    double * save_pat = new double [3*NS*NI*N];
+    save_pat = new double [3*NS*NI*N];
     for (int t=1; t<NT; t++) {
         std::cout << "EVAL REARRANGE PATINET " << t << std::endl; 
 
@@ -48,13 +38,26 @@ void eval_rp(){
         // first evaluate quantities
         double uth[N*dim] = {0};
         double flin[N*dim] = {0};
+          srand (time(NULL));
         for (int s=0; s<NS;s++) { // loop over structures
             for (int j=0; j<NI;j++) {
+
+                // calculate hessian
+                if (struct_soft_modes_flag==-1) {
+                    for (int i=0; i<N;i++) { // loop over particles
+                        for (int i2=0; i2<N;i2++) { // loop over particles
+                            calc_2Depot(i+s*N,i2+s*N,t,j,hessian[s*N*N+i*N+i2]);
+                        }
+                    }
+                }
+
+
                 for (int i=0; i<N;i++) {
                     for (int d=0; d<dim;d++) {
                         uth[d+i*dim] = xyz_inherent_data[i+s*N][d+dim*NT*j] - xyz_inherent_data[i+s*N][d+t*dim+dim*NT*j];
                         //std::cout << xyz_inherent_data[i+s*N][d+dim*NT*j] << " " << xyz_inherent_data[i+s*N][d+t*dim+dim*NT*j] << std::endl;
                         apply_pbc(uth[d+i*dim]);
+                        //uth[d+i*dim] = ((double) rand() / (RAND_MAX)) + -0.5;
                     }
                     //std::cout << "diff: " << uth[0+i*dim] << " " << uth[1+i*dim] << std::endl;
                 }
@@ -89,7 +92,7 @@ void eval_rp(){
             }
         }
 
-        std::cout << save_pat[0*NS*NI*N+1*N*NI+10*N+10] << " " << save_pat[1*NS*NI*N+1*N*NI+10*N+10] << " " << save_pat[2*NS*NI*N+1*N*NI+10*N+10] << "\n";
+        //std::cout << save_pat[0*NS*NI*N+1*N*NI+10*N+10] << " " << save_pat[1*NS*NI*N+1*N*NI+10*N+10] << " " << save_pat[2*NS*NI*N+1*N*NI+10*N+10] << "\n";
 
         // then save histograms for all three dynamical observables
         for (int k=0; k<3; k++) {

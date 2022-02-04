@@ -11,6 +11,7 @@
 #include "struct_base.h"
 #include "struct_soft_modes.h"  
 #include "struct_filion.h"  
+#include "struct_read.h"  
 #include "global.h"
  
  int main() {
@@ -189,10 +190,12 @@
                     StructNames[struct_soft_modes_flag+1] = "VIB";
                 } else if (parts[0] == "MLFILION") {
                     struct_filion_flag = NStructTotal;
-                    NStructTotal+=1;
-                    if (parts[1] == "WRITE") struct_filion_mode = 0;
-                    else struct_filion_mode = 1;
-                    StructNames[struct_filion_flag] = "ML_FILION";
+                    if (parts[1] == "INHERENT") struct_filion_mode = 1;
+                } else if (parts[0] == "READ") {
+                    struct_read_flag = NStructTotal;
+                    struct_read_Ntotal = parts[1].toInt();
+                    NStructTotal += struct_read_Ntotal;
+                    struct_read_file = parts[2].toStdString();
                 }
 
                 Nstruct_loc ++;
@@ -222,13 +225,14 @@
     if (bb_flag>=0) std::cout << "    " << bb_flag << ": Bond-Breaking " << sqrt(rcuti2) << " " << sqrt(rcuto2) << std::endl;
     if (exp_flag>=0) std::cout << "    " << exp_flag << ": Exponential Decay" << " " << sqrt(sqrt(1.0/exp_scale4i)) << std::endl;
     if (isf_flag>=0) std::cout << "    " << isf_flag << ": Intermediate Scattering Function" << " " << qisf << std::endl;
-    if (msd_flag>=0) std::cout << "    " << msd_flag << ": Mean Displacement"  << std::endl;
     if (rp_flag>=0) std::cout << "    " << rp_flag << ": Patinet Rearrangement Detection" << std::endl;
+    if (msd_flag>=0) std::cout << "    " << msd_flag << ": Mean Displacement"  << std::endl;
 
     std::cout << "EVALUATE " << Nstruct_loc << " statical descriptors:" << std::endl;
     if (struct_base_flag>=0) std::cout << "    " << struct_base_flag << ": Base" << " " << NHistoGr  << std::endl;
     if (struct_soft_modes_flag>=0) std::cout << "    " << struct_soft_modes_flag << ": Soft Modes" << std::endl;
     if (struct_filion_flag>=0) std::cout << "    " << struct_filion_flag << ": ML Filion" << std::endl;
+    if (struct_read_flag>=0) std::cout << "    " << struct_read_flag << ": Read Structural Descriptors" << std::endl;
 
     // read files
     read_files_lammps();
@@ -238,6 +242,7 @@
     if (struct_base_flag>=0) eval_struct_base();
     if (struct_soft_modes_flag>=0) eval_struct_soft_modes();
     if (struct_filion_flag>=0) eval_struct_filion();
+    if (struct_read_flag>=0) eval_struct_read();
 
     // eval boundaries and structural histogramms
     calc_bonds_histograms_structure();
@@ -246,11 +251,11 @@
     if (bb_flag>=0) eval_bb();
     if (exp_flag>=0) eval_exp();
     if (isf_flag>=0) eval_isf();
-    if (msd_flag>=0) eval_msd();
     if (rp_flag>=0) eval_rp();
+    if (msd_flag>=0) eval_msd();
 
     // print learning batches for machine learning
-    if (struct_filion_flag >= 0 && struct_filion_mode==0) write_descriptors_csv();
+    if (struct_filion_flag >= 0) write_descriptors_csv();
 
     // print xyz
     print_xyz_isoconf();

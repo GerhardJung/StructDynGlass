@@ -33,7 +33,8 @@ void eval_struct_filion(){
                     jType = type_data[j+s*N];
                     double dr=0.0, dx[dim];
                     for (int d=0; d<dim;d++) {
-                        dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
+                        if (struct_filion_mode == 1) dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
+                        else dx[d] = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
                         apply_pbc(dx[d]);
                         dr += dx[d]*dx[d];
                     }
@@ -57,10 +58,6 @@ void eval_struct_filion(){
     std::cout << "EVAL STRUCT FILION 2 " << std::endl; 
 
     normalize_cg_descriptors();
-
-    if (struct_filion_mode==1) {
-        read_eval_struct_filion_ml();
-    }
 
 }
 
@@ -149,7 +146,8 @@ void normalize_cg_descriptors(){
                 for (int j=0; j<N;j++) { // loop over particle pairs
                     double dr=0.0, dx[dim];
                     for (int d=0; d<dim;d++) {
-                        dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
+                        if (struct_filion_mode == 1) dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
+                        else dx[d] = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
                         apply_pbc(dx[d]);
                         dr += dx[d]*dx[d];
                     }
@@ -205,8 +203,6 @@ void normalize_cg_descriptors(){
 
 void write_descriptors_csv(){
 
-    std::cout << "test1" << std::endl;
-
     // normalize physical structural descriptors to have mean zero and unit variance
     double ** struct_local_norm; 
     struct_local_norm = dmatrix(0,N*NS-1,0,NStructTotal*NCG-1);
@@ -226,9 +222,7 @@ void write_descriptors_csv(){
         }
     }
 
-        std::cout << "test2" << std::endl;
-
-    int t=35;
+ 
     QString pathOrig = QString::fromStdString(folderOut);
     QString pathPred = pathOrig;
     pathPred.append("struct_filion_batch.csv");
@@ -236,7 +230,8 @@ void write_descriptors_csv(){
     outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream outPred(&outfilePred);
     //write header
-    for (int k=0; k<NDyn; k++) outPred << QString::fromStdString(DynNames[k]) << ",";
+    outPred << "TYPE" << ",";
+    for (int k=0; k<NDynTotal; k++) for (int t=0; t<NT; t++) outPred << QString::fromStdString(DynNames[k]) << t << ",";
     if (struct_base_flag>=0) { // include also other structural descriptors
         for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred << QString::fromStdString(StructNames[k]) << c << ",";
     }
@@ -254,7 +249,8 @@ void write_descriptors_csv(){
     outPred << "\n";
     // write body
     for (int i=0; i<N*NS; i++) {
-        for (int k=0; k<NDyn; k++) outPred << dyn_avg_save[i][k*NT+t] << ",";
+        outPred << type_data[i] << ",";
+        for (int k=0; k<NDynTotal; k++) for (int t=0; t<NT; t++) outPred << dyn_avg_save[i][k*NT+t] << ",";
         for (int k=0; k<NStructTotal*NCG; k++) outPred << struct_local_norm[i][k] << ",";
         for (int cg=0; cg <= CG_NMAX; cg++) {
             for (int k=0;k<NTot;k++) {
@@ -267,10 +263,4 @@ void write_descriptors_csv(){
     outfilePred.close();
     free_dmatrix(struct_local_norm,0,N*NS-1,0,NStructTotal*NCG-1);
     
-            std::cout << "test3" << std::endl;
-}
-
-
-void read_eval_struct_filion_ml(){
-
 }

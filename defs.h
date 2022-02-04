@@ -46,6 +46,7 @@ extern int msd_flag;            // flag for dynamical variables (msd)
 
 extern int rp_flag;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
 extern double dyn_rearrange_threshold; //threshold to differentiate between active and inactive
+extern double * save_pat;
 
 extern int NStruct;          // number of strctural observables to be analyzed
 extern int NStructTotal;
@@ -68,6 +69,10 @@ extern int modeSM;
 extern int struct_filion_flag;
 extern int struct_filion_mode;
 extern double ** struct_filion_descriptor_list;
+
+extern int struct_read_flag;
+extern int struct_read_Ntotal;
+extern std::string struct_read_file;
 
 // DATA
 extern int N;                      // number of particles

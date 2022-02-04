@@ -15,6 +15,5 @@ void eval_angular(int i,double * dx, double dr);
 void normalize_cg_descriptors();
 
 void write_descriptors_csv();
-void read_eval_struct_filion_ml();
 
 #endif

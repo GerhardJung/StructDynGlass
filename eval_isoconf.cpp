@@ -42,7 +42,7 @@ void norm_histogram(){
 
 void eval_isoconf(int t, int flag){
 
-    norm_histogram();
+    //norm_histogram();
 
     // print per particle histo
     // print histograms

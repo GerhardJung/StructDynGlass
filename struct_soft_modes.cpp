@@ -15,7 +15,7 @@ void eval_struct_soft_modes(){
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
             for (int j=0; j<N;j++) { // loop over particles
-                calc_2Depot(i+s*N,j+s*N,hessian[s*N*N+i*N+j]);
+                calc_2Depot(i+s*N,j+s*N,0,0,hessian[s*N*N+i*N+j]);
             }
         }
     }
@@ -252,7 +252,9 @@ void eval_struct_soft_modes(){
 // help functions
 
 // calc hessian matrix
-void calc_2Depot(int i, int j, double * result) {
+void calc_2Depot(int i, int j, int t, int iso, double * result) {
+
+
 
     if (i==j) { // need to sum over all neighbors
         double result_loc[dim*dim];
@@ -261,25 +263,24 @@ void calc_2Depot(int i, int j, double * result) {
         int iType = type_data[i];
         int s = (i - i % N)/N;
         //std::cout << "s " << s << std::endl;
+        for (int d1=0; d1<dim;d1++) {
+            for (int d2=0; d2<dim;d2++) {
+                result[d1*dim+d2] = 0.0;
+            }
+        }
         for (int k=0; k<N;k++) { // loop over particle pairs
             int kType = type_data[k+s*N];
             double dr = 0.0, dx[dim];
             for (int d=0; d<dim;d++) {
-                dx[d] = xyz_inherent_data[i][d] - xyz_inherent_data[k+s*N][d];
+                dx[d] = xyz_inherent_data[i][d+t*dim+dim*NT*iso] - xyz_inherent_data[k+s*N][d+t*dim+dim*NT*iso];
                 apply_pbc(dx[d]);
                 dr += dx[d]*dx[d];
             }
+            double sigma = determine_sigma(i, k+s*N);
 
             if(model=="KA2" || model=="KA2-2D") {
-                // adapt cutoff?
-                if (dr < RC2 && i!=k+s*N ) {
+                if (dr < RC2LJ*sigma && i!=k+s*N ) {
                     //std::cout << i << " " << k << std::endl;
-                    for (int d1=0; d1<dim;d1++) {
-                        for (int d2=0; d2<dim;d2++) {
-                            result_loc[d1*dim+d2] = 0.0;
-                        }
-                    }
-                    double sigma = determine_sigma(i, k);
                     double epsilon = determine_epsilon(iType, kType);
                     double rij2i =  1.0/dr;
                     double sigma2= sigma*sigma;
@@ -300,22 +301,15 @@ void calc_2Depot(int i, int j, double * result) {
                 }
             }
             if(model=="POLY") {
-                // adapt cutoff?
-                if (dr < RC2 && i!=k+s*N ) {
+                if (dr < RC2POLY*sigma && i!=k+s*N ) {
                     //std::cout << i << " " << k << std::endl;
-                    for (int d1=0; d1<dim;d1++) {
-                        for (int d2=0; d2<dim;d2++) {
-                            result_loc[d1*dim+d2] = 0.0;
-                        }
-                    }
-                    double sigma = determine_sigma(i, k);
                     double epsilon = determine_epsilon(iType, kType);
                     double rij2i =  1.0/dr;
                     double sigma2= sigma*sigma;
                     double rij6i = sigma2*sigma2*sigma2*rij2i*rij2i*rij2i;
                     double rij12i = rij6i*rij6i;
-                    double c2 = C2LJ / (sigma2);
-                    double c4 = C4LJ / (sigma2*sigma2);
+                    double c2 = C2POLY / (sigma2);
+                    double c4 = C4POLY / (sigma2*sigma2);
                     for (int d1=0; d1<dim;d1++) {
                         for (int d2=0; d2<dim;d2++) {
                             if (d1==d2) result_loc[d1*dim+d2] = 2.0*c2 + 8.0*c4*dx[d1]*dx[d1] + 4.0*c4*dr + 168.0*dx[d1]*dx[d1]*rij12i*rij2i*rij2i - 12.0*rij12i*rij2i;
@@ -336,18 +330,18 @@ void calc_2Depot(int i, int j, double * result) {
         int jType = type_data[j];
 
         // calculate interaction parameters
-        double sigma = determine_sigma(iType, jType);
+        double sigma = determine_sigma(i, j);
         double epsilon = determine_epsilon(iType, jType);
 
         double dr = 0.0, dx[dim];
         for (int d=0; d<dim;d++) {
-            dx[d] = xyz_inherent_data[i][d] - xyz_inherent_data[j][d];
+            dx[d] = xyz_inherent_data[i][d+t*dim+dim*NT*iso] - xyz_inherent_data[j][d+t*dim+dim*NT*iso];
             apply_pbc(dx[d]);
             dr += dx[d]*dx[d];
         }
 
         if(model=="KA2" || model=="KA2-2D") {
-            if (dr < RC2 ) {
+            if (dr < RC2LJ*sigma ) {
                 double result_loc[dim*dim];
                 double rij2i =  1.0/dr;
                 double sigma2= sigma*sigma;
@@ -368,15 +362,14 @@ void calc_2Depot(int i, int j, double * result) {
             } 
         }
         if(model=="POLY") {
-            // adapt cutoff?
-            if (dr < RC2 ) {
+            if (dr < RC2POLY*sigma) {
                 double result_loc[dim*dim];
                 double rij2i =  1.0/dr;
                 double sigma2= sigma*sigma;
                 double rij6i = sigma2*sigma2*sigma2*rij2i*rij2i*rij2i;
                 double rij12i = rij6i*rij6i;
-                double c2 = C2LJ / (sigma2);
-                double c4 = C4LJ / (sigma2*sigma2);
+                double c2 = C2POLY / (sigma2);
+                double c4 = C4POLY / (sigma2*sigma2);
                 for (int d1=0; d1<dim;d1++) {
                     for (int d2=0; d2<dim;d2++) {
                         if (d1==d2) result_loc[d1*dim+d2] = 2.0*c2 + 8.0*c4*dx[d1]*dx[d1] + 4.0*c4*dr + 168.0*dx[d1]*dx[d1]*rij12i*rij2i*rij2i - 12.0*rij12i*rij2i;
