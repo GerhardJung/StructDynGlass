@@ -49,7 +49,7 @@ int modeSM;
 double * participation_ratio;
 
 int struct_filion_flag=-1;
-int struct_filion_mode;
+int struct_filion_mode=0;
 double ** struct_filion_descriptor_list;
 
 int struct_read_flag=-1;

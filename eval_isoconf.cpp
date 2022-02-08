@@ -42,7 +42,7 @@ void norm_histogram(){
 
 void eval_isoconf(int t, int flag){
 
-    //norm_histogram();
+    norm_histogram();
 
     // print per particle histo
     // print histograms
@@ -441,16 +441,16 @@ void print_traj(double * save_dyn){
         QFile outfilePred(pathPred);   // input file with xyz
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred(&outfilePred);
-        for (int t=29; t<30; t++) {
+        for (int t=0; t<10; t++) {
             outPred << N << "\n";
             outPred << "Properties=species:I:1:pos:R:" << dim;
             outPred << ":RP:R:1";
             outPred << " time " << time_data[t]*timestep << "\n";
             for (int i = 0; i < N; i++) {
                 if (dim == 2) {
-                    outPred << type_data[i+(NS-1)*N]+1 << " " << xyz_data[i+(NS-1)*N][t*dim+dim*NT*j] << " " << xyz_data[i+(NS-1)*N][1+t*dim+dim*NT*j] << " ";
+                    outPred << type_data[i+(NS-1)*N]+1 << " " << xyz_inherent_data[i+(NS-1)*N][t*dim+dim*NT*j] << " " << xyz_inherent_data[i+(NS-1)*N][1+t*dim+dim*NT*j] << " ";
                 } else {
-                    outPred << type_data[i+(NS-1)*N]+1 << " " << xyz_data[i+(NS-1)*N][t*dim+dim*NT*j] << " " << xyz_data[i+(NS-1)*N][1+t*dim+dim*NT*j] << " " << xyz_data[i+(NS-1)*N][2+t*dim+dim*NT*j] << " ";
+                    outPred << type_data[i+(NS-1)*N]+1 << " " << xyz_inherent_data[i+(NS-1)*N][t*dim+dim*NT*j] << " " << xyz_inherent_data[i+(NS-1)*N][1+t*dim+dim*NT*j] << " " << xyz_inherent_data[i+(NS-1)*N][2+t*dim+dim*NT*j] << " ";
                 }
                 outPred << save_dyn[t*N*NI+j*N+i] << " ";
                 outPred << "\n";

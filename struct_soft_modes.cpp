@@ -12,13 +12,16 @@ void eval_struct_soft_modes(){
     std::cout << "EVAL STRUCT SOFT MODES " << std::endl; 
 
     // calculate hessian
+    double result_loc[dim*dim], dx[dim];
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
             for (int j=0; j<N;j++) { // loop over particles
-                calc_2Depot(i+s*N,j+s*N,0,0,hessian[s*N*N+i*N+j]);
+                calc_2Depot(i+s*N,j+s*N,0,0,result_loc,dx,hessian[s*N*N+i*N+j]);
             }
         }
     }
+
+    std::cout << "EVAL STRUCT SOFT MODES: CALC HESSIAN "  << std::endl; 
 
     // test harmonic
     /*int s=0;
@@ -252,25 +255,23 @@ void eval_struct_soft_modes(){
 // help functions
 
 // calc hessian matrix
-void calc_2Depot(int i, int j, int t, int iso, double * result) {
+void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx, double * result) {
 
-
+    // first reset result
+    for (int d1=0; d1<dim;d1++) {
+        for (int d2=0; d2<dim;d2++) {
+            result[d1*dim+d2] = 0.0;
+        }
+    }
 
     if (i==j) { // need to sum over all neighbors
-        double result_loc[dim*dim];
-
         // calculate types
         int iType = type_data[i];
         int s = (i - i % N)/N;
         //std::cout << "s " << s << std::endl;
-        for (int d1=0; d1<dim;d1++) {
-            for (int d2=0; d2<dim;d2++) {
-                result[d1*dim+d2] = 0.0;
-            }
-        }
         for (int k=0; k<N;k++) { // loop over particle pairs
             int kType = type_data[k+s*N];
-            double dr = 0.0, dx[dim];
+            double dr = 0.0;
             for (int d=0; d<dim;d++) {
                 dx[d] = xyz_inherent_data[i][d+t*dim+dim*NT*iso] - xyz_inherent_data[k+s*N][d+t*dim+dim*NT*iso];
                 apply_pbc(dx[d]);
@@ -333,7 +334,7 @@ void calc_2Depot(int i, int j, int t, int iso, double * result) {
         double sigma = determine_sigma(i, j);
         double epsilon = determine_epsilon(iType, jType);
 
-        double dr = 0.0, dx[dim];
+        double dr = 0.0;
         for (int d=0; d<dim;d++) {
             dx[d] = xyz_inherent_data[i][d+t*dim+dim*NT*iso] - xyz_inherent_data[j][d+t*dim+dim*NT*iso];
             apply_pbc(dx[d]);
@@ -342,7 +343,6 @@ void calc_2Depot(int i, int j, int t, int iso, double * result) {
 
         if(model=="KA2" || model=="KA2-2D") {
             if (dr < RC2LJ*sigma ) {
-                double result_loc[dim*dim];
                 double rij2i =  1.0/dr;
                 double sigma2= sigma*sigma;
                 double rij6i = sigma2*sigma2*sigma2*rij2i*rij2i*rij2i;
@@ -383,6 +383,13 @@ void calc_2Depot(int i, int j, int t, int iso, double * result) {
             } 
         }
     }
+
+    /*if( (i==5 && j==6) ||(i==5 && j==5))
+        for (int d1=0; d1<dim;d1++) {
+            for (int d2=0; d2<dim;d2++) {
+                std::cout << i << " " << j << " " << result[d1*dim+d2] << std::endl;
+            }
+        }*/
 }
 
 void calc_3Depot(int i, int j, int k, double * result) {

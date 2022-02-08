@@ -250,7 +250,7 @@ void write_descriptors_csv(){
     // write body
     for (int i=0; i<N*NS; i++) {
         outPred << type_data[i] << ",";
-        for (int k=0; k<NDynTotal; k++) for (int t=0; t<NT; t++) outPred << dyn_avg_save[i][k*NT+t] << ",";
+        for (int k=0; k<NDynTotal; k++) for (int t=1; t<NT; t++) outPred << dyn_avg_save[i][k*NT+t] << ",";
         for (int k=0; k<NStructTotal*NCG; k++) outPred << struct_local_norm[i][k] << ",";
         for (int cg=0; cg <= CG_NMAX; cg++) {
             for (int k=0;k<NTot;k++) {

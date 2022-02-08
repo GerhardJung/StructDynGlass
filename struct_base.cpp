@@ -65,6 +65,7 @@ void eval_struct_base(){
     rescale_print_gr();
 
     // calc psi_6/phi_5/theta_tanaka
+    std::cout << "EVAL STRUCT BASE: CALC PSI " << std::endl; 
     calc_psi(neighbors);
 
     // coarse-grain and calculate density
@@ -121,14 +122,17 @@ void rescale_print_gr(){
 void calc_psi(int ** neighbors){
     double dx[dim], dr;
     double dx_inherent[dim], dr_inherent;
-    double save_psi[24*N*NS] = {0};
+    double * save_psi = dvector(0,24*N*NS-1);
+    for (int i=0; i< 24*N*NS; i++) save_psi[i]=0.0;
+
+
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
             int n0 = 0;
             while (neighbors[i+s*N][n0] != -1 ) {
                 //std::cout << n0 << " " << neighbors[i+s*N][n0] << std::endl;
                 //if(n0>17) std::cout << neighbors[i+s*N][n0] << std::endl;
-                dr = 0.0;
+                dr = 0.0, dr_inherent=0.0;
                 for (int d=0; d<dim;d++) {
                     dx[d] = xyz_data[i+s*N][d] - xyz_data[neighbors[i+s*N][n0]+s*N][d];
                     apply_pbc(dx[d]);
@@ -208,6 +212,7 @@ void calc_psi(int ** neighbors){
 
         }
     }
+    free_dvector(save_psi,0,24*N*NS-1);
 }
 
 // iterate over all particles to calculate coarse-grained quantities and density

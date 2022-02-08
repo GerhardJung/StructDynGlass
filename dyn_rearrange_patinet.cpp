@@ -35,6 +35,17 @@ void eval_rp(){
             // TODO
         }
 
+        if (struct_soft_modes_flag==-1) {
+            double result_loc[dim*dim], dx[dim];
+            for (int s=0; s<NS;s++) {
+                    for (int i=0; i<N;i++) { // loop over particles
+                        for (int i2=0; i2<N;i2++) { // loop over particles
+                            calc_2Depot(i+s*N,i2+s*N,0,0,result_loc,dx,hessian[s*N*N+i*N+i2]);
+                        }
+                    }
+                }
+        }
+
         // first evaluate quantities
         double uth[N*dim] = {0};
         double flin[N*dim] = {0};
@@ -43,13 +54,13 @@ void eval_rp(){
             for (int j=0; j<NI;j++) {
 
                 // calculate hessian
-                if (struct_soft_modes_flag==-1) {
+                /*if (struct_soft_modes_flag==-1) {
                     for (int i=0; i<N;i++) { // loop over particles
                         for (int i2=0; i2<N;i2++) { // loop over particles
                             calc_2Depot(i+s*N,i2+s*N,t,j,hessian[s*N*N+i*N+i2]);
                         }
                     }
-                }
+                }*/
 
 
                 for (int i=0; i<N;i++) {
@@ -68,6 +79,7 @@ void eval_rp(){
                         for (int i2=0; i2<N;i2++) {
                             for (int di2=0; di2<dim;di2++) {
                                 flin[di+i*dim] += hessian[s*N*N+i*N+i2][di2+di*dim]*uth[di2+i2*dim];
+                                //std::cout << "hessian " << hessian[s*N*N+i*N+i2][di2+di*dim] << std::endl;
                             }
                         }
                     }
@@ -79,13 +91,18 @@ void eval_rp(){
                     save_pat[s*N*NI+j*N+i] = log10uth2;
 
                     double fres = 0.0;
-                    for (int di=0; di<dim;di++) fres += flin[di+i*dim]*flin[di+i*dim];
+                    for (int di=0; di<dim;di++) {
+                        fres += flin[di+i*dim]*flin[di+i*dim];
+                        //std::cout << "flin " << flin[di+i*dim] << std::endl;
+                    }
+                    //std::cout << fres << std::endl;
                     fres = sqrt(fres);
                     if (fres < 1e-6) fres = 1e-6;
                     double passive = 1.0;
                     if (fres > dyn_rearrange_threshold) passive = 0.0;
                     double log10fres = log10(fres);
                     save_pat[NS*NI*N+s*N*NI+j*N+i] = log10fres;
+                    //save_pat[NS*NI*N+s*N*NI+j*N+i] = flin[i*dim];
                     save_pat[2*NS*NI*N+s*N*NI+j*N+i] = passive;
 
                 }
