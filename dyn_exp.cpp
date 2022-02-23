@@ -1,9 +1,9 @@
 
 #include "dyn_exp.h"
-#include "global.h"
 #include "defs.h"
 #include "pbc.h"
 #include "eval_isoconf.h"
+#include "eval_struct.h"
 
 void eval_exp(){
 
@@ -43,7 +43,7 @@ void eval_exp(){
                         dr += dx*dx;
                     }
                     double C_loc= exp(-dr*dr*exp_scale4i);
-                    add_histogram_avg(s,i,dyn_ranges_time[flag][2*t],dyn_ranges_time[flag][2*t+1],C_loc);
+                    add_histogram_avg(s,i,j,&dyn_ranges_time[flag][2*t],C_loc);
                 }
             }
         }

@@ -122,12 +122,11 @@ void rescale_print_gr(){
 void calc_psi(int ** neighbors){
     double dx[dim], dr;
     double dx_inherent[dim], dr_inherent;
-    double * save_psi = dvector(0,24*N*NS-1);
-    for (int i=0; i< 24*N*NS; i++) save_psi[i]=0.0;
-
-
+    double * save_psi = dvector(0,4*(2*(lmax)+1)*lmax-1);
+    
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
+            for (int i=0; i< 4*(2*(lmax)+1)*lmax; i++) save_psi[i]=0.0;
             int n0 = 0;
             while (neighbors[i+s*N][n0] != -1 ) {
                 //std::cout << n0 << " " << neighbors[i+s*N][n0] << std::endl;
@@ -141,85 +140,115 @@ void calc_psi(int ** neighbors){
                     apply_pbc(dx_inherent[d]);
                     dr_inherent += dx_inherent[d]*dx_inherent[d];
                 }
-                double thetaij= (dx[1] > 0) ? acos(dx[0]/sqrt(dr)) : 2*M_PI-acos(dx[0]/sqrt(dr));
-                double thetaij_inherent= (dx_inherent[1] > 0) ? acos(dx_inherent[0]/sqrt(dr_inherent)) : 2*M_PI-acos(dx_inherent[0]/sqrt(dr_inherent));
-                //std::cout << n0 << " " << theta << " " << dx[0]/sqrt(dr) << std::endl;
+                dr = sqrt(dr);
+                dr_inherent = sqrt(dr_inherent);
 
-                // calc psi
-                for (int psi_order=0; psi_order < 6; psi_order++ ) {
-                    save_psi[24*(i+s*N)+4*psi_order] += cos((psi_order+4)*thetaij);
-                    save_psi[24*(i+s*N)+4*psi_order+1] += sin((psi_order+4)*thetaij);
-                    save_psi[24*(i+s*N)+4*psi_order+2] += cos((psi_order+4)*thetaij_inherent);
-                    save_psi[24*(i+s*N)+4*psi_order+3] += sin((psi_order+4)*thetaij_inherent);
+                if (dim==2) {
+                    double thetaij= (dx[1] > 0) ? acos(dx[0]/dr) : 2*M_PI-acos(dx[0]/dr);
+                    double thetaij_inherent= (dx_inherent[1] > 0) ? acos(dx_inherent[0]/dr_inherent) : 2*M_PI-acos(dx_inherent[0]/dr_inherent);
+                    //std::cout << n0 << " " << theta << " " << dx[0]/sqrt(dr) << std::endl;
+
+                    // calc psi
+                    for (int psi_order=lmin; psi_order < lmax; psi_order++ ) {
+                        save_psi[4*(psi_order)] += cos((psi_order)*thetaij);
+                        save_psi[4*(psi_order)+1] += sin((psi_order)*thetaij);
+                        save_psi[4*(psi_order)+2] += cos((psi_order)*thetaij_inherent);
+                        save_psi[4*(psi_order)+3] += sin((psi_order)*thetaij_inherent);
+                    }
+
+                    // calc theta tanaka
+                    int n1=0;
+                    while (neighbors[i+s*N][n1] != -1 ) {
+                        int j=neighbors[i+s*N][n0];
+                        int k=neighbors[i+s*N][n1];
+                        // check that n1 and n0 are also neighbors
+                        int n2=0;
+                        int neigh_check = 0;
+                        while (neighbors[j+s*N][n2] != -1 ) {
+                            if (neighbors[j+s*N][n2] == k) {
+                                neigh_check=1;
+                                break;
+                            }
+                            n2++;
+                        }
+                        if (neigh_check==1) { // found triangle ijk
+                            dr = 0.0;
+                            for (int d=0; d<dim;d++) {
+                                dx[d] = xyz_data[i+s*N][d] - xyz_data[neighbors[i+s*N][n1]+s*N][d];
+                                apply_pbc(dx[d]);
+                                dr += dx[d]*dx[d];
+                                dx_inherent[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[neighbors[i+s*N][n1]+s*N][d];
+                                apply_pbc(dx_inherent[d]);
+                                dr_inherent += dx_inherent[d]*dx_inherent[d];
+                            }
+
+                            // thermal
+                            double thetaik= (dx[1] > 0) ? acos(dx[0]/sqrt(dr)) : 2*M_PI-acos(dx[0]/sqrt(dr));
+                            double thetai = abs(thetaij - thetaik); 
+                            if (thetai > M_PI) thetai = 2*M_PI -  thetai;
+                            double sigma_ij = determine_sigma(i+s*N, j+s*N);    
+                            double sigma_ik = determine_sigma(i+s*N, k+s*N);   
+                            double sigma_kj = determine_sigma(k+s*N, j+s*N); 
+                            double theta2 = acos ( (sigma_ij*sigma_ij + sigma_ik*sigma_ik - sigma_kj*sigma_kj) / (2.0*sigma_ij*sigma_ik)  );     
+                            struct_local[NCG*(struct_base_flag+4)][i+s*N] +=  abs( thetai - theta2);    
+
+                            // inherent
+                            double thetaik_inherent= (dx_inherent[1] > 0) ? acos(dx_inherent[0]/sqrt(dr_inherent)) : 2*M_PI-acos(dx_inherent[0]/sqrt(dr_inherent));
+                            double thetai_inherent = abs(thetaij_inherent - thetaik_inherent); 
+                            if (thetai_inherent > M_PI) thetai_inherent = 2*M_PI -  thetai_inherent;  
+                            struct_local[NCG*(struct_base_flag+5)][i+s*N] +=  abs( thetai_inherent - theta2);  
+                            
+                        }
+                        n1++;
+                    }
+
+                } else {
+                    calc_bond_order_3d(dx,dr,save_psi);
+                    calc_bond_order_3d(dx_inherent,dr_inherent,&save_psi[2*(2*(lmax)+1)*lmax]);
                 }
 
-                // calc theta tanaka
-                int n1=0;
-                while (neighbors[i+s*N][n1] != -1 ) {
-                    int j=neighbors[i+s*N][n0];
-                    int k=neighbors[i+s*N][n1];
-                    // check that n1 and n0 are also neighbors
-                    int n2=0;
-                    int neigh_check = 0;
-                    while (neighbors[j+s*N][n2] != -1 ) {
-                        if (neighbors[j+s*N][n2] == k) {
-                            neigh_check=1;
-                            break;
-                        }
-                        n2++;
-                    }
-                    if (neigh_check==1) { // found triangle ijk
-                        dr = 0.0;
-                        for (int d=0; d<dim;d++) {
-                            dx[d] = xyz_data[i+s*N][d] - xyz_data[neighbors[i+s*N][n1]+s*N][d];
-                            apply_pbc(dx[d]);
-                            dr += dx[d]*dx[d];
-                            dx_inherent[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[neighbors[i+s*N][n1]+s*N][d];
-                            apply_pbc(dx_inherent[d]);
-                            dr_inherent += dx_inherent[d]*dx_inherent[d];
-                        }
-
-                        // thermal
-                        double thetaik= (dx[1] > 0) ? acos(dx[0]/sqrt(dr)) : 2*M_PI-acos(dx[0]/sqrt(dr));
-                        double thetai = abs(thetaij - thetaik); 
-                        if (thetai > M_PI) thetai = 2*M_PI -  thetai;
-                        double sigma_ij = determine_sigma(i+s*N, j+s*N);    
-                        double sigma_ik = determine_sigma(i+s*N, k+s*N);   
-                        double sigma_kj = determine_sigma(k+s*N, j+s*N); 
-                        double theta2 = acos ( (sigma_ij*sigma_ij + sigma_ik*sigma_ik - sigma_kj*sigma_kj) / (2.0*sigma_ij*sigma_ik)  );     
-                        struct_local[NCG*(struct_base_flag+4)][i+s*N] +=  abs( thetai - theta2);    
-
-                        // thermal
-                        double thetaik_inherent= (dx_inherent[1] > 0) ? acos(dx_inherent[0]/sqrt(dr_inherent)) : 2*M_PI-acos(dx_inherent[0]/sqrt(dr_inherent));
-                        double thetai_inherent = abs(thetaij_inherent - thetaik_inherent); 
-                        if (thetai_inherent > M_PI) thetai_inherent = 2*M_PI -  thetai_inherent;  
-                        struct_local[NCG*(struct_base_flag+5)][i+s*N] +=  abs( thetai_inherent - theta2);  
-                         
-                    }
-                    n1++;
-                }
-                
                 n0 ++;
             }
 
-            // normalize theta tanaka
-            struct_local[NCG*(struct_base_flag+4)][i+s*N] /= n0*2.0;
-            struct_local[NCG*(struct_base_flag+5)][i+s*N] /= n0*2.0;
-            // calculate psis of different order
-            for (int psi_order=0; psi_order < 12; psi_order++ ) { // including thermal and inherent states
-                struct_local[NCG*(struct_base_flag+psi_order+6)][i+s*N] = sqrt(save_psi[24*(i+s*N)+2*psi_order]*save_psi[24*(i+s*N)+2*psi_order] + save_psi[24*(i+s*N)+2*psi_order+1]*save_psi[24*(i+s*N)+2*psi_order+1])/((double) n0);
+            if (dim==2) {
+                // normalize theta tanaka
+                struct_local[NCG*(struct_base_flag+4)][i+s*N] /= n0*2.0;
+                struct_local[NCG*(struct_base_flag+5)][i+s*N] /= n0*2.0;
+                // calculate psis of different order
+                for (int psi_order=2*lmin; psi_order < 2*lmax; psi_order++ ) { // including thermal and inherent states
+                    struct_local[NCG*(struct_base_flag+psi_order-2*lmin+6)][i+s*N] = sqrt(save_psi[2*psi_order]*save_psi[2*psi_order] + save_psi[2*psi_order+1]*save_psi[2*psi_order+1])/((double) n0);
+                }
+            } else {
+
+                // theta tanaka not implemented for 3D
+                struct_local[NCG*(struct_base_flag+4)][i+s*N] = 0.0;
+                struct_local[NCG*(struct_base_flag+5)][i+s*N] = 0.0;
+                for (int l=lmin; l<lmax; l++) {
+                    for (int m=-l; m<=l;m++) {
+                        double real_val = save_psi[2*l*(2*lmax+1)+2*(m+lmax)];
+                        double imag_val = save_psi[2*l*(2*lmax+1)+2*(m+lmax)+1];
+                        struct_local[NCG*(struct_base_flag+2*l-2*lmin+6)][i+s*N] +=  (real_val*real_val + imag_val*imag_val);
+                    }
+                    struct_local[NCG*(struct_base_flag+2*l-2*lmin+6)][i+s*N] = sqrt(4.0*M_PI/(2*l+1)*struct_local[NCG*(struct_base_flag+2*l-2*lmin+6)][i+s*N]);
+                    for (int m=-l; m<=l;m++) { //inherent states
+                        double real_val = save_psi[2*(2*lmax+1)*lmax+2*l*(2*lmax+1)+2*(m+lmax)];
+                        double imag_val = save_psi[2*(2*lmax+1)*lmax+2*l*(2*lmax+1)+2*(m+lmax)+1];
+                        struct_local[NCG*(struct_base_flag+2*l-2*lmin+7)][i+s*N] +=  (real_val*real_val + imag_val*imag_val);
+                    }
+                    struct_local[NCG*(struct_base_flag+2*l-2*lmin+7)][i+s*N] = sqrt(4.0*M_PI/(2*l+1)*struct_local[NCG*(struct_base_flag+2*l-2*lmin+7)][i+s*N]);
+                }
             }
 
         }
     }
-    free_dvector(save_psi,0,24*N*NS-1);
+    free_dvector(save_psi,0,4*(2*lmax+1)*lmax-1);
 }
 
 // iterate over all particles to calculate coarse-grained quantities and density
 void eval_den_cg(){
     double mean_den[NCG];
     double mean_den_inherent[NCG];
-    double mean_rest[16*NCG];
+    double mean_rest[24*NCG];
 
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
@@ -227,7 +256,7 @@ void eval_den_cg(){
             for (int c=0; c<NCG; c++) {
                 mean_den[c] = 0.0;
                 mean_den_inherent[c] = 0.0;
-                for (int k=0; k<16; k++) {
+                for (int k=0; k<24; k++) {
                      mean_rest[c+NCG*k] = 0.0;   
                 }
             }
@@ -254,7 +283,7 @@ void eval_den_cg(){
                     double w_inherent = exp(-dr_inherent/L);
                     mean_den_inherent[c] += w_inherent;
 
-                    for (int k=0; k<8; k++) {
+                    for (int k=0; k<lmax-lmin+2; k++) {
                         mean_rest[c+NCG*2*k] += w*struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N];
                         mean_rest[c+NCG*2*k+1] += w_inherent*struct_local[NCG*(struct_base_flag+2*k+3)][j+s*N];
                     }
@@ -269,7 +298,7 @@ void eval_den_cg(){
                 struct_local[NCG*(struct_base_flag)+c][i+s*N] = mean_den[c]/((L+1.0)*(L+1.0)*(L+1.0) );
                 struct_local[NCG*(struct_base_flag+1)+c][i+s*N] = mean_den_inherent[c]/((L+1.0)*(L+1.0)*(L+1.0) );
                 if(c>0) {
-                    for (int k=0; k<8; k++) {
+                    for (int k=0; k<lmax-lmin+2; k++) {
                         struct_local[NCG*(struct_base_flag+2*k+2)+c][i+s*N] = mean_rest[c+NCG*2*k]/mean_den[c];
                         struct_local[NCG*(struct_base_flag+2*k+3)+c][i+s*N] = mean_rest[c+NCG*2*k+1]/mean_den_inherent[c];
                     }
@@ -357,4 +386,34 @@ double calc_epot(int i, int j, double dist2) {
             return 4.0*epsilon*(C0POLY+C2POLY*rij2+C4POLY*rij4 + rij12 ) ;
         } 
     } else return 0.0;
+}
+
+void calc_bond_order_3d(double * dx,double dr, double * save_psi){
+    double thetaij = acos(dx[2]/dr);
+    double phiij= atan(dx[1]/dx[0]);
+    if (dx[0] < 0) 
+        if (dx[1]<0) phiij=phiij - M_PI;
+        else phiij=phiij + M_PI;
+
+    // prepare spherical harmonics
+    for (int l = lmin; l < lmax; l++) {
+        for (int m=0; m<=l;m++) {
+            double leg = sph_legendre (l, m, thetaij );
+            save_psi[2*(2*lmax+1)*l+2*(m+lmax)] += leg * cos(m*phiij);
+            save_psi[2*(2*lmax+1)*l+2*(m+lmax)+1] += leg * sin(m*phiij);
+            //std::cout << l << " "<< m << " "<< lmax << " "<< 2*(2*lmax+1)*l+2*(m+lmax) << " "<< 4*(2*lmax+1)*lmax-1 << std::endl;
+            if (save_psi[2*(2*lmax+1)*l+2*(m+lmax)]!=save_psi[2*(2*lmax+1)*l+2*(m+lmax)]) {
+                //std::cout << l << " " << m << " " << dx[2]/dr << " " << phiij << " " << save_psi[2*(2*lmax+1)*l+2*(m+lmax)] << std::endl;
+                exit(0);
+            }
+        }
+        for (int m=-l; m<0;m++) {
+            double sign = 1.0;
+            if ( (-m)%2==1) sign=-1.0;
+            save_psi[2*(2*lmax+1)*l+2*(m+lmax)] += sign*save_psi[2*(2*lmax+1)*l+2*(-m+lmax)+1];
+            save_psi[2*(2*lmax+1)*l+2*(m+lmax)+1] += sign*save_psi[2*(2*lmax+1)*l+2*(-m+lmax)];
+            //std::cout << l << " "<< m << " "<< psi[2*(2*lmax+1)*l+2*(m+lmax)] << " "<< psi[2*(2*lmax+1)*l+2*(m+lmax)+1] << std::endl;
+        }
+    }
+
 }

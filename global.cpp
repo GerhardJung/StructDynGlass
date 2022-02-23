@@ -109,12 +109,7 @@ void calc_print_global(){
      int Nquasi = 0;
      for (int s=0; s<NS;s++) {
         for (int k=0; k<N*dim-dim;k++) {
-            double Pw = 0.0;
-            for (int i=0; i<N;i++) {
-                double resloc=0.0;
-                for (int di=0; di<dim;di++) resloc+=hessian_evectors[s*N*dim+k][i*dim+di]*hessian_evectors[s*N*dim+k][i*dim+di];
-                Pw += resloc*resloc;
-            }
+            double Pw = 1.0/(N*participation_ratio[s*N*dim+k]);
             
             int wloc = hessian_evalues[s*N*dim+k]/wmax*NHistoSM;
             if (wloc < NHistoSM && wloc >=0) {
@@ -199,52 +194,4 @@ void calc_tau_alpha(int flag, int count){
         global_properties[count*NTYPE+type] = -log(0.36787944117/A)/B;
       }
     }
-}
-
-void calc_bonds_histograms_structure(){
-    std::cout << "test" << std::endl;
-    // reset histograms
-    for (int j = 0; j < NCG*NStructTotal; j++) {
-        for (int k = 0; k < NTYPE*NHistoStruct; k++) struct_hist[j][k] = 0.0;
-        struct_ranges[j][0] = 10000;          // minimum
-        struct_ranges[j][1] = -10000;         // maximum
-    }
-
-    // determine bonds and calculate hitograms
-    double * struct_loc;
-    for (int j = 0; j < NStructTotal; j++) {
-      for (int c = 0; c < NCG; c++) {
-        struct_loc = struct_local[j*NCG+c];
-        //if (j==5 && c==2) std::cout << struct_ranges[j*NCG+c][0] << " " << struct_ranges[j*NCG+c][1] << " " << struct_loc[2] << std::endl;
-        calc_bonds(struct_loc,struct_ranges[j*NCG+c]);
-        //if (j==5 && c==2) std::cout << struct_ranges[j*NCG+c][0] << " " << struct_ranges[j*NCG+c][1] << std::endl;
-
-        // calculate histograms
-        for (int i=0; i<N*NS; i++) {
-          int valint;
-          if (struct_loc[i] > struct_ranges[j*NCG+c][1] - EPS) valint = NHistoStruct - 1;
-          else valint = (struct_loc[i]-struct_ranges[j*NCG+c][0])/(struct_ranges[j*NCG+c][1] - struct_ranges[j*NCG+c][0])* ((double)NHistoStruct);
-          if (valint < 0) std::cout << struct_loc[i] << std::endl;
-          struct_hist[j*NCG+c][type_data[i]*NHistoStruct + valint] += 1.0;
-        }
-
-        // normalize histograms
-        for (int type=0; type<NTYPE; type++) {
-          for (int k=0; k<NHistoStruct; k++) struct_hist[j*NCG+c][type*NHistoStruct+k] /= (double) NS*NPerType[type];
-        }
-      }
-    }
-
-      std::cout << "CALC BONDS: FINISHED " << std::endl; 
-}
-
-
-// help functions
-void calc_bonds(double * input, double * output){
-  output[0] = 10000.0;
-  output[1] = -10000.0;
-  for (int i=0; i<N*NS; i++) { // find minima and maxima
-    if (input[i] < output[0]) output[0] = input[i];
-    if (input[i] > output[1]) output[1] = input[i];
-  }
 }

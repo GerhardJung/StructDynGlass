@@ -18,7 +18,8 @@ void eval_isf(){
                     double dx = xyz_data[i+s*N][d+dim*NT*j] - xyz_data[i+s*N][d+t*dim+dim*NT*j];
                     apply_pbc(dx);
                     double C_loc= cos(qisf*dx);
-                    add_histogram_avg(s,i,dyn_ranges[isf_flag][0],dyn_ranges[isf_flag][1],C_loc);
+                    //if (j==0 && i==0 && s==0) std::cout << "cut " <<dyn_ranges[isf_flag][2] << std::endl;
+                    add_histogram_avg(s,i,j,dyn_ranges[isf_flag],C_loc);
                 }
             }
         }

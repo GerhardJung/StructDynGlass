@@ -30,7 +30,7 @@ void eval_bb(){
                     checkneighbors(s, i,j, t, n0, nt, neighbors);
                     // add to probability distribution and averages
                     double C_loc= nt/((double) n0);
-                    add_histogram_avg(s,i,dyn_ranges[bb_flag][0],dyn_ranges[bb_flag][1],C_loc);
+                    add_histogram_avg(s,i,j,dyn_ranges[bb_flag],C_loc);
                     //if (t==1 && C_loc <1) std::cout << s << " "<< i << " " << C_loc << std::endl;
                 }
             }

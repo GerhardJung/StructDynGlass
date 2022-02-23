@@ -10,11 +10,12 @@
 #include <QDir>
 #include <QDebug>
 #include <QString>
+#include <chrono>
 
 #include "nrutil.h"
 #include "read_write_lammps.h"
 
-#define NCG 4
+#define NCG 9
 
 #define EPS 0.000000001
 
@@ -46,7 +47,9 @@ extern int msd_flag;            // flag for dynamical variables (msd)
 
 extern int rp_flag;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
 extern double dyn_rearrange_threshold; //threshold to differentiate between active and inactive
+extern int dyn_rearrange_mode;
 extern double * save_pat;
+extern double * save_pat_traj;
 
 extern int NStruct;          // number of strctural observables to be analyzed
 extern int NStructTotal;
@@ -55,6 +58,8 @@ extern std::string * StructNames;
 extern int struct_base_flag;       // flag for the very basic structural descriptors
 extern int NHistoGr;
 extern double rcut2;            // cutoff for neighbor search
+extern int lmax;
+extern int lmin;
 
 extern int struct_soft_modes_flag;       // flag for structural descriptors connected to soft modes
 extern int NHistoSM;                    // number of histogram bins used for density of states evaluation
@@ -67,7 +72,7 @@ extern double * participation_ratio;
 extern int modeSM;
 
 extern int struct_filion_flag;
-extern int struct_filion_mode;
+extern std::string struct_filion_file;
 extern double ** struct_filion_descriptor_list;
 
 extern int struct_read_flag;
@@ -94,6 +99,7 @@ extern double * global_properties;
 //DYN
 extern double **dyn_hist_data;
 extern double *dyn_avg;
+extern double *dyn_sys_avg;
 extern double *dyn_avg2;
 extern double **dyn_pred;
 extern double **dyn_avg_save;
@@ -104,7 +110,8 @@ extern double **struct_local;
 
 extern double **struct_base_gr;
 
-extern double **struct_filion_classifiers;
+extern double **struct_filion_classifiers_thermal;
+extern double **struct_filion_classifiers_inherent;
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 extern double **dyn_ranges;

@@ -4,7 +4,7 @@
 #include "defs.h"
 
 void reset_dyn(int t);
-void add_histogram_avg(int s, int i, double hist_lower, double hist_upper, double val);
+void add_histogram_avg(int s, int i, int j,double* hist_cut, double val);
 void norm_histogram();
 
 void eval_isoconf(int t, int flag);

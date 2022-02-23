@@ -146,7 +146,10 @@ void print_xyz_isoconf(){
         for (int t=1; t<NT; t++) {
             outPred << N << "\n";
             outPred << "Properties=species:I:1:pos:R:" << dim;
-            for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred << ":" << QString::fromStdString(StructNames[k]) << c << ":R:1";
+            for (int k=0; k<NStructTotal; k++) {
+                if (k<struct_read_flag || k>=struct_read_flag+struct_read_Ntotal) for (int c=0; c<NCG; c++) outPred << ":" << QString::fromStdString(StructNames[k]) << c << ":R:1";
+                else outPred << ":" << QString::fromStdString(StructNames[k]) << ":R:1";
+            }
             for (int k=0; k<NDynTotal; k++) outPred << ":" << QString::fromStdString(DynNames[k]) << ":R:1";
             outPred << " time " << time_data[t]*timestep << "\n";
             for (int i = 0; i < N; i++) {
@@ -155,7 +158,10 @@ void print_xyz_isoconf(){
                 } else {
                     outPred << type_data[i+s*N]+1 << " " << xyz_inherent_data[i+s*N][0] << " " << xyz_inherent_data[i+s*N][1] << " " << xyz_inherent_data[i+s*N][2] << " ";
                 }
-                for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred << struct_local[k*NCG+c][i+s*N] << " ";
+                for (int k=0; k<NStructTotal; k++) {
+                    if (k<struct_read_flag || k>=struct_read_flag+struct_read_Ntotal) for (int c=0; c<NCG; c++) outPred << struct_local[k*NCG+c][i+s*N] << " ";
+                    else outPred << struct_local[k*NCG][i+s*N] << " ";
+                }
                 for (int k=0; k<NDynTotal; k++) outPred << dyn_avg_save[i+s*N][k*NT+t] << " ";
                 outPred << "\n";
             }

@@ -1,9 +1,9 @@
 
 #include "dyn_msd.h"
-#include "global.h"
 #include "defs.h"
 #include "pbc.h"
 #include "eval_isoconf.h"
+#include "eval_struct.h"
 
 void eval_msd(){
 
@@ -15,8 +15,9 @@ void eval_msd(){
 
         // first calculate bonds (by just iterating over one trajectory)
         if (dyn_ranges[flag][0] > -10000.0) {
-            dyn_ranges_time[flag][2*t] = dyn_ranges[flag][0];
-            dyn_ranges_time[flag][2*t+1] = dyn_ranges[flag][1];
+            dyn_ranges_time[flag][3*t] = dyn_ranges[flag][0];
+            dyn_ranges_time[flag][3*t+1] = dyn_ranges[flag][1];
+            dyn_ranges_time[flag][3*t+2] = dyn_ranges[flag][2];
         } else { // determine binning from maximal and minimal values (just iterate over one simulation)
             double dyn_loc[N*NS] = {0};
             for (int s=0; s<NS;s++) { // loop over structures
@@ -30,11 +31,12 @@ void eval_msd(){
                     dyn_loc[s*N+i] = dr;
                 }
             }
-            calc_bonds(dyn_loc,&dyn_ranges_time[flag][2*t]);
+            calc_bonds(dyn_loc,&dyn_ranges_time[flag][3*t]);
         }
         if (dyn_ranges[flag+1][0] > -10000.0) {
-            dyn_ranges_time[flag+1][2*t] = dyn_ranges[flag+1][0];
-            dyn_ranges_time[flag+1][2*t+1] = dyn_ranges[flag+1][1];
+            dyn_ranges_time[flag+1][3*t] = dyn_ranges[flag+1][0];
+            dyn_ranges_time[flag+1][3*t+1] = dyn_ranges[flag+1][1];
+            dyn_ranges_time[flag+1][3*t+2] = dyn_ranges[flag+1][2];
         } else { // determine binning from maximal and minimal values (just iterate over one simulation)
             double dyn_loc[N*NS] = {0};
             for (int s=0; s<NS;s++) { // loop over structures
@@ -48,7 +50,7 @@ void eval_msd(){
                     dyn_loc[s*N+i] = log(dr);
                 }
             }
-            calc_bonds(dyn_loc,&dyn_ranges_time[flag+1][2*t]);
+            calc_bonds(dyn_loc,&dyn_ranges_time[flag+1][3*t]);
         }
 
         // the main evaluation for the isoconfigurational ensemble (mean displacement)
@@ -63,7 +65,7 @@ void eval_msd(){
                         dr += dx*dx;
                     }
                     dr = sqrt(dr);
-                    add_histogram_avg(s,i,dyn_ranges_time[flag][2*t],dyn_ranges_time[flag][2*t+1],dr);
+                    add_histogram_avg(s,i,j,&dyn_ranges_time[flag][3*t],dr);
                 }
             }
         }
@@ -87,7 +89,7 @@ void eval_msd(){
                     dr = log10(dr);
                     //std::cout << dr << std::endl;
                     //if (save_pat[2*NS*NI*N+s*N*NI+j*N+i] < 0.5) {
-                        add_histogram_avg(s,i,dyn_ranges_time[flag+1][2*t],dyn_ranges_time[flag+1][2*t+1],dr);
+                        add_histogram_avg(s,i,j,&dyn_ranges_time[flag+1][3*t],dr);
                     //}
                 }
             }

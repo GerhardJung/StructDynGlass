@@ -13,10 +13,13 @@ void reset_dyn(int t){
         dyn_avg[i] = 0.0;
         dyn_avg2[i] = 0.0;
     }
+    for (int i = 0; i < NS*NI*NTYPE; i++) dyn_sys_avg[i] = 0.0;
 }
 
-void add_histogram_avg(int s, int i, double hist_lower, double hist_upper, double val){
+void add_histogram_avg(int s, int i, int j,double* hist_cut, double val){
     int valint;
+    double hist_lower = hist_cut[0];
+    double hist_upper = hist_cut[1];
     if (val > hist_upper - EPS && val < hist_upper + EPS) valint = NHisto - 1;
     else valint = (val-hist_lower)/(hist_upper - hist_lower)* ((double)NHisto);
     //if ( valint < 0 || valint >= NHisto) std::cout << valint << " " << val << " " <<  (val-hist_lower)/(hist_upper - hist_lower) << " " <<  hist_upper << " " <<  hist_lower << std::endl;
@@ -25,6 +28,7 @@ void add_histogram_avg(int s, int i, double hist_lower, double hist_upper, doubl
 
     dyn_avg[s*N+i] += val;
     dyn_avg2[s*N+i] += val*val; 
+    //if (val < hist_cut[2]) dyn_sys_avg[s*NTYPE*NI+type_data[s*N+i]*NI+j] += 1.0;
 }
 
 void norm_histogram(){
@@ -65,13 +69,17 @@ void eval_isoconf(int t, int flag){
     //}
 
     // eval Ciso and variances
-    double Ciso[NTYPE*NS], delta[NTYPE*NS], Delta[NTYPE*NS];
+    double Ciso[NTYPE*NS], delta[NTYPE*NS], Delta[NTYPE*NS], Chi4[NTYPE], Chi4Norm[NTYPE];
     for (int type=0; type<NTYPE*NS; type++) {
         Ciso[type] = 0.0;
         delta[type] = 0.0;
         Delta[type] = 0.0;
     }
-
+    for (int type=0; type<NTYPE; type++) {
+        Chi4[type] = 0.0;
+        Chi4Norm[type] = 0.0;
+    }
+    
     for (int s = 0; s < NS; s++) {
         for (int i = 0; i < N; i++) {
 
@@ -96,14 +104,33 @@ void eval_isoconf(int t, int flag){
 
             // Write into isoconfig storage
             dyn_avg_save[i+s*N][flag*NT+t] = dyn_avg[i+s*N];
+            //if(i+s*N<5) cout <<dyn_avg[i+s*N] << std::endl;
 
             // calculate delta and Delta
             //std::cout << type_data[i] << std::endl;
             Ciso[type_data[i+s*N]*NS+s] += dyn_avg[i+s*N];
             delta[type_data[i+s*N]*NS+s] += dyn_avg[i+s*N]*dyn_avg[i+s*N];
             Delta[type_data[i+s*N]*NS+s] += dyn_avg2[i+s*N];
-
         }
+    }
+
+    for (int type=0; type<NTYPE; type++) {
+        for (int s = 0; s < NS; s++) {
+            double dyn_sys_avg_loc = 0.0;
+            //for (int i=0; i<N;i++) if (type==type_data[i+s*N]) dyn_sys_avg_loc += dyn_avg[i+s*N];
+            for (int i=0; i<N;i++) 
+                if (type==type_data[i+s*N]) {
+                    if(DynNames[flag]=="MD") {if(dyn_avg[i+s*N] > 0.438) dyn_sys_avg_loc += 1.0;}
+                    else if(DynNames[flag]=="LOG(MD)") {if(dyn_avg[i+s*N] > -0.3) dyn_sys_avg_loc += 1.0;}
+                    else if(DynNames[flag]=="LOG(FRES)") {if(dyn_avg[i+s*N] > 1.0) dyn_sys_avg_loc += 1.0;}
+                    else if(DynNames[flag]=="LOG(UTH)") {if(dyn_avg[i+s*N] > -0.3) dyn_sys_avg_loc += 1.0;}
+                    else {dyn_sys_avg_loc += dyn_avg[i+s*N];}
+                }
+            Chi4Norm[type]+=dyn_sys_avg_loc;
+            Chi4[type]+=dyn_sys_avg_loc*dyn_sys_avg_loc;
+        }
+        Chi4Norm[type] /= (double) NS;
+        Chi4[type] /= (double) NS;
     }
 
     for (int type=0; type<NTYPE; type++) {
@@ -111,6 +138,8 @@ void eval_isoconf(int t, int flag){
         double R2_loc = 0.0;
         double Ciso_loc = 0.0;
         double Ciso2_loc = 0.0;
+        double Chi4_loc = 0.0;
+        double Chi42_loc = 0.0;
         for (int s = 0; s < NS; s++) {
             Ciso[type*NS+s] /= (double) NPerType[type];
             delta[type*NS+s] /= (double) NPerType[type];
@@ -123,12 +152,13 @@ void eval_isoconf(int t, int flag){
             Ciso2_loc += Ciso[type*NS+s]*Ciso[type*NS+s];
             R_loc += delta[type*NS+s]/Delta[type*NS+s];
             R2_loc += delta[type*NS+s]/Delta[type*NS+s]*delta[type*NS+s]/Delta[type*NS+s];
-        }
-
-        dyn_pred[t+NT*flag][4*type + 0] = Ciso_loc/NS;
-        dyn_pred[t+NT*flag][4*type + 1] = sqrt(Ciso2_loc/NS - Ciso_loc/NS*Ciso_loc/NS)/sqrt(NS);
-        dyn_pred[t+NT*flag][4*type + 2] = R_loc/NS;
-        dyn_pred[t+NT*flag][4*type + 3] = sqrt(R2_loc/NS - R_loc/NS*R_loc/NS)/sqrt(NS);
+       }
+        
+        dyn_pred[t+NT*flag][5*type + 0] = Ciso_loc/NS;
+        dyn_pred[t+NT*flag][5*type + 1] = sqrt(Ciso2_loc/NS - Ciso_loc/NS*Ciso_loc/NS)/sqrt(NS);
+        dyn_pred[t+NT*flag][5*type + 2] = R_loc/NS;
+        dyn_pred[t+NT*flag][5*type + 3] = sqrt(R2_loc/NS - R_loc/NS*R_loc/NS)/sqrt(NS);
+        dyn_pred[t+NT*flag][5*type + 4] = (Chi4[type] - Chi4Norm[type]*Chi4Norm[type])/((double) NPerType[type]);
         //std::cout << Ciso[type] << std::endl;
 
     }
@@ -142,26 +172,28 @@ void eval_isoconf(int t, int flag){
     // evalue connection dynamics <-> structure
     double * struct_loc;
     for (int j = 0; j < NStructTotal; j++) {
-      for (int c = 0; c < NCG; c++) {
-        struct_loc = struct_local[j*NCG+c];
-        // rest histogramms
-        for (int j = 0; j < NHisto; j++) {
-            for (int type=0; type<NTYPE; type++) {
-                for (int s=0; s<NHistoStruct; s++) {
-                    dyn_struct_hist_iso[type][s*NHisto+j] = 0.0;
-                    dyn_struct_hist_val[type][s*NHisto+j] = 0.0;
+        int cmax = NCG;
+        if (j>=struct_read_flag && j < struct_read_flag + struct_read_Ntotal) cmax=1;
+        for (int c = 0; c < cmax; c++) {
+            struct_loc = struct_local[j*NCG+c];
+            // rest histogramms
+            for (int j = 0; j < NHisto; j++) {
+                for (int type=0; type<NTYPE; type++) {
+                    for (int s=0; s<NHistoStruct; s++) {
+                        dyn_struct_hist_iso[type][s*NHisto+j] = 0.0;
+                        dyn_struct_hist_val[type][s*NHisto+j] = 0.0;
+                    }
                 }
             }
-        }
 
-        // calculate histograms for mutual information (dynamics <-> structure)
-        //calc_histograms_information_theory(struct_loc, loc, j, c);
+            // calculate histograms for mutual information (dynamics <-> structure)
+            //calc_histograms_information_theory(struct_loc, loc, j, c);
 
-        // evaluate mututal information
-        //eval_information_theory_correlation(t,j,c);
+            // evaluate mututal information
+            //eval_information_theory_correlation(t,j,c);
 
-        // evaluate pearon and spearman rank coefficients
-        eval_pearson_spearman_correlation(t,struct_loc,j,flag,c);
+            // evaluate pearon and spearman rank coefficients
+            eval_pearson_spearman_correlation(t,struct_loc,j,flag,c);
 
       }
     }
@@ -370,8 +402,8 @@ void print_isoconf(int flag){
     for (int t=1; t<NT; t++) {
         outPred << time_data[t]*timestep << " ";
         for (int type=0; type<NTYPE; type++) {
-            for (int j = 0; j < 4; j++) {
-                outPred << dyn_pred[t+NT*flag][4*type + j] << " ";
+            for (int j = 0; j < 5; j++) {
+                outPred << dyn_pred[t+NT*flag][5*type + j] << " ";
             }
         }
         outPred << "\n";
@@ -380,24 +412,26 @@ void print_isoconf(int flag){
 
     // print information theory and correlation coefficients
     for (int j = 0; j < NStructTotal; j++) {
-      for (int c = 0; c < NCG; c++) {
-        QString pathPred = pathOrig;
-        pathPred.append(QString("/isoconf_correlation_%1_%2_%3.dat").arg(QString::fromStdString(DynNames[flag])).arg(QString::fromStdString(StructNames[j])).arg(c));
-        QFile outfilePred(pathPred);   // input file with xyz
-        outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
-        QTextStream outPred(&outfilePred);
-        outPred << "Time Kp Ks Rs Rtot\n";
-        for (int t=1; t<NT; t++) {
-            outPred << time_data[t]*timestep << " ";
-            for (int type=0; type<NTYPE; type++) {
-                for (int k = 0; k < 1; k++) { // only print pearson
-                    outPred << dyn_struct_pred[j*NCG+c+t*NCG*NStructTotal+NCG*NStructTotal*NT*flag][type+k*NTYPE] << " " << dyn_struct_pred[j*NCG+c+t*NCG*NStructTotal+NCG*NStructTotal*NT*flag][type+k*NTYPE]*dyn_pred[t+NT*flag][4*type + 2] << " ";
+        int cmax = NCG;
+        if (j>=struct_read_flag && j < struct_read_flag + struct_read_Ntotal) cmax=1;
+        for (int c = 0; c < cmax; c++) {
+            QString pathPred = pathOrig;
+            pathPred.append(QString("/isoconf_correlation_%1_%2_%3.dat").arg(QString::fromStdString(DynNames[flag])).arg(QString::fromStdString(StructNames[j])).arg(c));
+            QFile outfilePred(pathPred);   // input file with xyz
+            outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
+            QTextStream outPred(&outfilePred);
+            outPred << "Time Kp Ks Rs Rtot\n";
+            for (int t=1; t<NT; t++) {
+                outPred << time_data[t]*timestep << " ";
+                for (int type=0; type<NTYPE; type++) {
+                    for (int k = 0; k < 1; k++) { // only print pearson
+                        outPred << dyn_struct_pred[j*NCG+c+t*NCG*NStructTotal+NCG*NStructTotal*NT*flag][type+k*NTYPE] << " " << dyn_struct_pred[j*NCG+c+t*NCG*NStructTotal+NCG*NStructTotal*NT*flag][type+k*NTYPE]*dyn_pred[t+NT*flag][4*type + 2] << " ";
+                    }
                 }
+                outPred << "\n";
             }
-            outPred << "\n";
+            outfilePred.close();
         }
-        outfilePred.close();
-      }
     }
 
 
@@ -441,18 +475,18 @@ void print_traj(double * save_dyn){
         QFile outfilePred(pathPred);   // input file with xyz
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred(&outfilePred);
-        for (int t=0; t<10; t++) {
+        for (int t=0; t<NT; t++) {
             outPred << N << "\n";
             outPred << "Properties=species:I:1:pos:R:" << dim;
-            outPred << ":RP:R:1";
+            outPred << ":LOG(FRES):R:1";
             outPred << " time " << time_data[t]*timestep << "\n";
             for (int i = 0; i < N; i++) {
                 if (dim == 2) {
-                    outPred << type_data[i+(NS-1)*N]+1 << " " << xyz_inherent_data[i+(NS-1)*N][t*dim+dim*NT*j] << " " << xyz_inherent_data[i+(NS-1)*N][1+t*dim+dim*NT*j] << " ";
+                    outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*dim+dim*NT*j] << " " << xyz_inherent_data[i][1+t*dim+dim*NT*j] << " ";
                 } else {
-                    outPred << type_data[i+(NS-1)*N]+1 << " " << xyz_inherent_data[i+(NS-1)*N][t*dim+dim*NT*j] << " " << xyz_inherent_data[i+(NS-1)*N][1+t*dim+dim*NT*j] << " " << xyz_inherent_data[i+(NS-1)*N][2+t*dim+dim*NT*j] << " ";
+                    outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*dim+dim*NT*j] << " " << xyz_inherent_data[i][1+t*dim+dim*NT*j] << " " << xyz_inherent_data[i][2+t*dim+dim*NT*j] << " ";
                 }
-                outPred << save_dyn[t*N*NI+j*N+i] << " ";
+                outPred << save_pat_traj[t*N*NI+j*N+i] << " ";
                 outPred << "\n";
             }
         }

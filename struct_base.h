@@ -11,6 +11,8 @@
 #define C2POLY 2.11106232533
 #define C4POLY -0.5910974510
 
+#define __STDCPP_WANT_MATH_SPEC_FUNCS__ 1
+
 void eval_struct_base();
 
 void rescale_print_gr();
@@ -21,5 +23,6 @@ void eval_den_cg();
 double determine_sigma(int i, int j);
 double determine_epsilon(int iType, int jType);
 double calc_epot(int i, int j,  double dist2);
+void calc_bond_order_3d(double * dx,double dr, double * save_psi);
 
 #endif

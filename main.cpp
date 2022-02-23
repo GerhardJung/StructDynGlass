@@ -12,10 +12,11 @@
 #include "struct_soft_modes.h"  
 #include "struct_filion.h"  
 #include "struct_read.h"  
+#include "eval_struct.h"
 #include "global.h"
  
  int main() {
-   
+
     // open input file
     QString path = QDir::current().path();
     path.append("/input.opt");
@@ -25,7 +26,7 @@
     
     // read input file
     const QRegExp rxInt(QLatin1String("[^0-9]+"));
-    const QRegExp rxString(QLatin1String("[^A-Z0-9.-]+"));
+    const QRegExp rxString(QLatin1String("[^A-Za-z0-9./_-]+"));
     int line_counter = 0;
     int Ndyn_loc=0, Nstruct_loc=0;
     while (!infileStream.atEnd()){
@@ -73,16 +74,14 @@
 
             case 5: {
                 NDyn = line.toInt();
-                dyn_ranges = dmatrix(0,NDyn+30-1,0,1);
+                dyn_ranges = dmatrix(0,NDyn+30-1,0,2);
                 DynNames = new std::string[NDyn+30];
+                if (NDyn == 0) {
+                    line_counter++;
+                }
                 break;
             }
             case 6: {
-
-                if (NDyn == 0) {
-                    line_counter++;
-                    break;
-                }
 
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BB") {
@@ -128,22 +127,23 @@
                 }  else if (parts[0] == "RP") {
                     rp_flag = NDynTotal;
                     NDynTotal+=3;
-                    dyn_rearrange_threshold = parts[1].toDouble();
+                    dyn_rearrange_mode = parts[1].toInt();
+                    dyn_rearrange_threshold = parts[2].toDouble();
                     if (parts[2] != "DYN") {
-                        dyn_ranges[rp_flag][0] = parts[2].toDouble();
-                        dyn_ranges[rp_flag][1] = parts[3].toDouble();
+                        dyn_ranges[rp_flag][0] = parts[3].toDouble();
+                        dyn_ranges[rp_flag][1] = parts[4].toDouble();
                     } else {
                         dyn_ranges[rp_flag][0] = - 10001.0; // calculate ranges dynamically
                     }
                     if (parts[4] != "DYN") {
-                        dyn_ranges[rp_flag+1][0] = parts[4].toDouble();
-                        dyn_ranges[rp_flag+1][1] = parts[5].toDouble();
+                        dyn_ranges[rp_flag+1][0] = parts[5].toDouble();
+                        dyn_ranges[rp_flag+1][1] = parts[6].toDouble();
                     } else {
                         dyn_ranges[rp_flag+1][0] = - 10001.0; // calculate ranges dynamically
                     }
                     if (parts[6] != "DYN") {
-                        dyn_ranges[rp_flag+2][0] = parts[6].toDouble();
-                        dyn_ranges[rp_flag+2][1] = parts[7].toDouble();
+                        dyn_ranges[rp_flag+2][0] = parts[7].toDouble();
+                        dyn_ranges[rp_flag+2][1] = parts[8].toDouble();
                     } else {
                         dyn_ranges[rp_flag+2][0] = - 10001.0; // calculate ranges dynamically
                     }
@@ -157,26 +157,23 @@
             }
             case 7: {
                 NStruct = line.toInt();
-                StructNames = new std::string[NStruct+30];
+                StructNames = new std::string[NStruct+550];
                 break;
             }
             case 8: {
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BASE") {
                     struct_base_flag = NStructTotal;
-                    NStructTotal += 18;
+                    NStructTotal += 6+2*(lmax-lmin);
                     NHistoGr = parts[1].toInt();
                     rcut2 = parts[2].toDouble()*parts[2].toDouble();
                     StructNames[struct_base_flag] = "DEN";
                     StructNames[struct_base_flag+2] = "EPOT";
                     StructNames[struct_base_flag+4] = "TT";
-                    StructNames[struct_base_flag+6] = "PSI4";
-                    StructNames[struct_base_flag+8] = "PSI5";
-                    StructNames[struct_base_flag+10] = "PSI6";
-                    StructNames[struct_base_flag+12] = "PSI7";
-                    StructNames[struct_base_flag+14] = "PSI8";
-                    StructNames[struct_base_flag+16] = "PSI9";
-                    for (int k=0; k<9; k++) {
+                    for (int l=lmin; l<lmax; l++) {
+                        StructNames[struct_base_flag+6 + 2*l - 2*lmin] = "PSI" + std::to_string(l);
+                    }
+                    for (int k=0; k<3 + lmax - lmin; k++) {
                         StructNames[struct_base_flag+2*k+1] = StructNames[struct_base_flag+2*k] + "_INH";
                     }
                 }     else if (parts[0] == "SM") {
@@ -190,7 +187,7 @@
                     StructNames[struct_soft_modes_flag+1] = "VIB";
                 } else if (parts[0] == "MLFILION") {
                     struct_filion_flag = NStructTotal;
-                    if (parts[1] == "INHERENT") struct_filion_mode = 1;
+                    struct_filion_file = parts[1].toStdString();
                 } else if (parts[0] == "READ") {
                     struct_read_flag = NStructTotal;
                     struct_read_Ntotal = parts[1].toInt();
@@ -220,7 +217,8 @@
     std::cout << "LAMMPS XYZ IN: " << lammpsIn << std::endl;
     std::cout << "EXTENDED XYZ OUT (DYN): " << folderOut << std::endl;
     std::cout << "CnfStart/CnfStep/timestep: " << CnfStart << " " << CnfStep << " " << timestep << std::endl;
-    std::cout << "NS/NI/NHisto: " << NS << " " << NI << " " << NHisto << std::endl;
+    std::cout << "NS/NI/NHisto/NHistoStruct: " << NS << " " << NI << " " << NHisto << " " << NHistoStruct << std::endl;
+    std::cout << "Dimension/Model/NTypes: " << dim << " " << model << " " << NTYPE  << std::endl;
     std::cout << "EVALUATE " << NDyn << " dynamical observables:" << std::endl;
     if (bb_flag>=0) std::cout << "    " << bb_flag << ": Bond-Breaking " << sqrt(rcuti2) << " " << sqrt(rcuto2) << std::endl;
     if (exp_flag>=0) std::cout << "    " << exp_flag << ": Exponential Decay" << " " << sqrt(sqrt(1.0/exp_scale4i)) << std::endl;
@@ -232,7 +230,7 @@
     if (struct_base_flag>=0) std::cout << "    " << struct_base_flag << ": Base" << " " << NHistoGr  << std::endl;
     if (struct_soft_modes_flag>=0) std::cout << "    " << struct_soft_modes_flag << ": Soft Modes" << std::endl;
     if (struct_filion_flag>=0) std::cout << "    " << struct_filion_flag << ": ML Filion" << std::endl;
-    if (struct_read_flag>=0) std::cout << "    " << struct_read_flag << ": Read Structural Descriptors" << std::endl;
+    if (struct_read_flag>=0) std::cout << "    " << struct_read_flag << ": Read Structural Descriptors " << struct_read_file << std::endl;
 
     // read files
     read_files_lammps();
@@ -243,6 +241,8 @@
     if (struct_soft_modes_flag>=0) eval_struct_soft_modes();
     if (struct_filion_flag>=0) eval_struct_filion();
     if (struct_read_flag>=0) eval_struct_read();
+
+    if (struct_filion_flag >= 0 && NStructTotal>=0) write_descriptors_csv_phys();
 
     // eval boundaries and structural histogramms
     calc_bonds_histograms_structure();
@@ -255,7 +255,7 @@
     if (msd_flag>=0) eval_msd();
 
     // print learning batches for machine learning
-    if (struct_filion_flag >= 0) write_descriptors_csv();
+    if (struct_filion_flag >= 0 && NDynTotal>=0) write_descriptors_csv_dyn();
 
     // print xyz
     print_xyz_isoconf();

@@ -13,37 +13,30 @@ void eval_rp(){
 
     // loop over time
     save_pat = new double [3*NS*NI*N];
+    save_pat_traj = new double [NT*NI*N];
     for (int t=1; t<NT; t++) {
         std::cout << "EVAL REARRANGE PATINET " << t << std::endl; 
 
         if (dyn_ranges[flag][0] > -10000.0) {
-            dyn_ranges_time[flag][2*t] = dyn_ranges[flag][0];
-            dyn_ranges_time[flag][2*t+1] = dyn_ranges[flag][1];
+            dyn_ranges_time[flag][3*t] = dyn_ranges[flag][0];
+            dyn_ranges_time[flag][3*t+1] = dyn_ranges[flag][1];
+            dyn_ranges_time[flag][3*t+2] = dyn_ranges[flag][2];
         } else { // determine binning from maximal and minimal values
             // TODO
         }
         if (dyn_ranges[flag+1][0] > -10000.0) {
-            dyn_ranges_time[flag+1][2*t] = dyn_ranges[flag+1][0];
-            dyn_ranges_time[flag+1][2*t+1] = dyn_ranges[flag+1][1];
+            dyn_ranges_time[flag+1][3*t] = dyn_ranges[flag+1][0];
+            dyn_ranges_time[flag+1][3*t+1] = dyn_ranges[flag+1][1];
+            dyn_ranges_time[flag+1][3*t+2] = dyn_ranges[flag+1][2];
         } else { // determine binning from maximal and minimal values
             // TODO
         }
         if (dyn_ranges[flag+2][0] > -10000.0) {
-            dyn_ranges_time[flag+2][2*t] = dyn_ranges[flag+2][0];
-            dyn_ranges_time[flag+2][2*t+1] = dyn_ranges[flag+2][1];
+            dyn_ranges_time[flag+2][3*t] = dyn_ranges[flag+2][0];
+            dyn_ranges_time[flag+2][3*t+1] = dyn_ranges[flag+2][1];
+            dyn_ranges_time[flag+2][3*t+2] = dyn_ranges[flag+2][2];
         } else { // determine binning from maximal and minimal values
             // TODO
-        }
-
-        if (struct_soft_modes_flag==-1) {
-            double result_loc[dim*dim], dx[dim];
-            for (int s=0; s<NS;s++) {
-                    for (int i=0; i<N;i++) { // loop over particles
-                        for (int i2=0; i2<N;i2++) { // loop over particles
-                            calc_2Depot(i+s*N,i2+s*N,0,0,result_loc,dx,hessian[s*N*N+i*N+i2]);
-                        }
-                    }
-                }
         }
 
         // first evaluate quantities
@@ -51,16 +44,31 @@ void eval_rp(){
         double flin[N*dim] = {0};
           srand (time(NULL));
         for (int s=0; s<NS;s++) { // loop over structures
+
+            if (dyn_rearrange_mode==0) {
+                double result_loc[dim*dim], dx[dim];
+                for (int i=0; i<N;i++) { // loop over particles
+                    for (int i2=0; i2<N;i2++) { // loop over particles
+                        calc_2Depot(i+s*N,i2+s*N,0,0,result_loc,dx,hessian[i*N+i2]);
+                    }
+                }
+            }
+
+
             for (int j=0; j<NI;j++) {
 
-                // calculate hessian
-                /*if (struct_soft_modes_flag==-1) {
+                //std::cout << j << " START HESSIAN" << std::endl;
+
+                if (dyn_rearrange_mode==1) {
+                    double result_loc[dim*dim], dx[dim];
                     for (int i=0; i<N;i++) { // loop over particles
                         for (int i2=0; i2<N;i2++) { // loop over particles
-                            calc_2Depot(i+s*N,i2+s*N,t,j,hessian[s*N*N+i*N+i2]);
+                            calc_2Depot(i+s*N,i2+s*N,t,j,result_loc,dx,hessian[i*N+i2]);
                         }
                     }
-                }*/
+                }
+
+                //std::cout << j << " FIN HESSIAN" << std::endl;
 
 
                 for (int i=0; i<N;i++) {
@@ -78,7 +86,7 @@ void eval_rp(){
                     for (int di=0; di<dim;di++) {
                         for (int i2=0; i2<N;i2++) {
                             for (int di2=0; di2<dim;di2++) {
-                                flin[di+i*dim] += hessian[s*N*N+i*N+i2][di2+di*dim]*uth[di2+i2*dim];
+                                flin[di+i*dim] += hessian[i*N+i2][di2+di*dim]*uth[di2+i2*dim];
                                 //std::cout << "hessian " << hessian[s*N*N+i*N+i2][di2+di*dim] << std::endl;
                             }
                         }
@@ -104,8 +112,10 @@ void eval_rp(){
                     save_pat[NS*NI*N+s*N*NI+j*N+i] = log10fres;
                     //save_pat[NS*NI*N+s*N*NI+j*N+i] = flin[i*dim];
                     save_pat[2*NS*NI*N+s*N*NI+j*N+i] = passive;
-
+                    if (s==0) save_pat_traj[t*N*NI+j*N+i] = log10fres;
                 }
+
+                //std::cout << j << " FIN REST" << std::endl;
             }
         }
 
@@ -114,10 +124,11 @@ void eval_rp(){
         // then save histograms for all three dynamical observables
         for (int k=0; k<3; k++) {
             reset_dyn(t);
+            //if (k==1) std::cout << dyn_ranges_time[flag+k][2*t]
             for (int s=0; s<NS;s++) { // loop over structures
                 for (int j=0; j<NI;j++) {
                     for (int i=0; i<N;i++) {
-                        add_histogram_avg(s,i,dyn_ranges_time[flag+k][2*t],dyn_ranges_time[flag+k][2*t+1],save_pat[k*NS*NI*N+s*N*NI+j*N+i]);
+                        add_histogram_avg(s,i,j,&dyn_ranges_time[flag+k][3*t],save_pat[k*NS*NI*N+s*N*NI+j*N+i]);
                         //if (t==2) std::cout << fres << " " << dyn_ranges_time[flag][2*t] << " "  << dyn_ranges_time[flag][2*t+1] << std::endl;
                     }
                 }
@@ -129,7 +140,7 @@ void eval_rp(){
     }
 
     // write results
-    //print_traj(save_pat);
+    print_traj(save_pat_traj);
     print_isoconf(flag);
     print_isoconf(flag+1);
     print_isoconf(flag+2);
