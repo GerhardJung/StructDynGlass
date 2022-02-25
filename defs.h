@@ -15,7 +15,7 @@
 #include "nrutil.h"
 #include "read_write_lammps.h"
 
-#define NCG 9
+#define NCG 16
 
 #define EPS 0.000000001
 

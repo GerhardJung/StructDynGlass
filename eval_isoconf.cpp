@@ -459,6 +459,7 @@ void print_isoconf(int flag){
     }
     outfileHisto.close();
 
+
 }
 
 void print_traj(double * save_dyn){

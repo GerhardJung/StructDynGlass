@@ -43,9 +43,13 @@ void eval_struct_read(){
         }
     }
 
+    std::cout << "EVAL STRUCT READ: FINISHED1 " << std::endl; 
+
     // eval chi4
     for (int k=0; k< struct_read_Ntotal; k++) {
-        eval_struct(struct_read_flag+k);
+        //eval_struct(struct_read_flag+k);
     }
+
+    std::cout << "EVAL STRUCT READ: FINISHED2 " << std::endl; 
 
 }

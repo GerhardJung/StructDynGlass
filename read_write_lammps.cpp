@@ -34,6 +34,7 @@ void read_files_lammps(){
     }
     infile.close();
     NT = Nloc/(9 + N);
+    if (NDynTotal==0) NT=1;
 
     std::cout << "Simulation settings:" << std::endl;
     std::cout << "N/dim/boxL/NT: " << N << " " << dim << " " << boxL << " " << NT << std::endl;
@@ -168,5 +169,30 @@ void print_xyz_isoconf(){
         }
         outfilePred.close();
     }
+
+    // print prediction
+    if (rp_flag>=0) {
+        QString pathOrig1 = QString::fromStdString(folderOut);
+        QString pathPred1 = pathOrig1;
+        pathPred1.append(QString("read_isoconf.dat"));
+        std::cout << pathPred1.toStdString() << std::endl;
+        QFile outfilePred1(pathPred1);   // input file with xyz
+        outfilePred1.open(QIODevice::WriteOnly | QIODevice::Text);
+        QTextStream outPred1(&outfilePred1);
+        outPred1 << "TYPE";
+        for (int t=1; t<NT; t++) {
+            outPred1 << " LOG(FRES)" << t;
+        }
+        outPred1 << "\n";
+        for (int i = 0; i < N*NS; i++) {
+            outPred1 << type_data[i] << " ";
+            for (int t=1; t<NT; t++) {
+                outPred1 << dyn_avg_save[i][(rp_flag+1)*NT+t] << " ";
+            }
+            outPred1 << "\n";
+        }
+        outfilePred1.close();
+    }
+
 
 }

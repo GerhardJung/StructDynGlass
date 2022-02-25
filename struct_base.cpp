@@ -248,7 +248,8 @@ void calc_psi(int ** neighbors){
 void eval_den_cg(){
     double mean_den[NCG];
     double mean_den_inherent[NCG];
-    double mean_rest[24*NCG];
+    int Nother = (lmax-lmin+2);
+    double mean_rest[2*Nother*NCG];
 
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
@@ -256,7 +257,7 @@ void eval_den_cg(){
             for (int c=0; c<NCG; c++) {
                 mean_den[c] = 0.0;
                 mean_den_inherent[c] = 0.0;
-                for (int k=0; k<24; k++) {
+                for (int k=0; k<2*Nother; k++) {
                      mean_rest[c+NCG*k] = 0.0;   
                 }
             }
@@ -277,15 +278,16 @@ void eval_den_cg(){
 
                 for (int c=0; c<NCG; c++) {
                     double L = c;
+                    L/=2.0;
                     if (L < 0.1) L = 0.1;
                     double w = exp(-dr/L);
                     mean_den[c] += w;
                     double w_inherent = exp(-dr_inherent/L);
                     mean_den_inherent[c] += w_inherent;
 
-                    for (int k=0; k<lmax-lmin+2; k++) {
+                    for (int k=0; k<Nother; k++) {
                         mean_rest[c+NCG*2*k] += w*struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N];
-                        mean_rest[c+NCG*2*k+1] += w_inherent*struct_local[NCG*(struct_base_flag+2*k+3)][j+s*N];
+                        mean_rest[c+NCG*(2*k+1)] += w_inherent*struct_local[NCG*(struct_base_flag+2*k+3)][j+s*N];
                     }
                 }
             }
@@ -294,13 +296,14 @@ void eval_den_cg(){
 
             for (int c=0; c<NCG; c++) {
                 double L = c;
+                L/=2.0;
                 if (L < 0.1) L = 0.1;
                 struct_local[NCG*(struct_base_flag)+c][i+s*N] = mean_den[c]/((L+1.0)*(L+1.0)*(L+1.0) );
                 struct_local[NCG*(struct_base_flag+1)+c][i+s*N] = mean_den_inherent[c]/((L+1.0)*(L+1.0)*(L+1.0) );
                 if(c>0) {
                     for (int k=0; k<lmax-lmin+2; k++) {
                         struct_local[NCG*(struct_base_flag+2*k+2)+c][i+s*N] = mean_rest[c+NCG*2*k]/mean_den[c];
-                        struct_local[NCG*(struct_base_flag+2*k+3)+c][i+s*N] = mean_rest[c+NCG*2*k+1]/mean_den_inherent[c];
+                        struct_local[NCG*(struct_base_flag+2*k+3)+c][i+s*N] = mean_rest[c+NCG*(2*k+1)]/mean_den_inherent[c];
                     }
                 }
             }

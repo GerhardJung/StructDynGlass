@@ -255,7 +255,7 @@
     if (msd_flag>=0) eval_msd();
 
     // print learning batches for machine learning
-    if (struct_filion_flag >= 0 && NDynTotal>=0) write_descriptors_csv_dyn();
+    if (struct_filion_flag >= 0 && NDynTotal>0) write_descriptors_csv_dyn();
 
     // print xyz
     print_xyz_isoconf();

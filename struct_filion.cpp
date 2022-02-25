@@ -104,6 +104,38 @@ void eval_struct_filion(){
     }
     outfilePred3.close();
 
+    /*QString pathPred1 = QString::fromStdString(folderOut);
+    pathPred1.append("struct_filion_inherent.csv");
+    QFile outfilePred1(pathPred1);   // input file with xyz
+    outfilePred1.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream outPred1(&outfilePred1);
+    //write header
+    outPred1 << "TYPE" << ",";
+    for (int cg=0; cg <= CG_NMAX; cg++) {
+        for (int type=0; type<NTYPE; type++) {
+            for (int k=0;k<NRadial;k++) {
+                outPred1 << "INHCG" << cg << ":R" << struct_filion_descriptor_list[k][0] << ":" << struct_filion_descriptor_list[k][1] << ":T" << type << ",";
+            }
+        }
+        for (int k=0;k<NAngular;k++) {
+            outPred1 << "INHCG" << cg << ":A" << struct_filion_descriptor_list[NRadial+k][0] << ":" << struct_filion_descriptor_list[NRadial+k][1] << ":" << struct_filion_descriptor_list[NRadial+k][2];
+            if (cg != CG_NMAX || k!= NAngular-1) outPred1 << ",";
+        }
+    }
+    outPred1 << "\n";
+    // write body
+    for (int i=0; i<N*NS; i++) {
+        outPred1 << type_data[i] << ",";
+        for (int cg=0; cg <= CG_NMAX; cg++) {
+            for (int k=0;k<NTot;k++) {
+                outPred1 << struct_filion_classifiers_inherent[i][NTot*cg+k];
+                if (cg != CG_NMAX || k!= NTot-1) outPred1 << ",";
+            }
+        }
+        outPred1 << "\n";
+    }
+    outfilePred1.close();*/
+
     // free memory
     free_dmatrix(struct_filion_classifiers_thermal,0,N*NS-1,0,NTot*(CG_NMAX+1)-1);
     //free_dmatrix(struct_filion_classifiers_inherent,0,N*NS-1,0,NTot*(CG_NMAX+1)-1);
@@ -353,6 +385,80 @@ void normalize_cg_descriptors(int struct_filion_mode, double ** struct_filion_cl
 
 void write_descriptors_csv_phys(){
 
+    // calculate additional structural descriptors
+    double ** struct_local_var; 
+    int Nother = (lmax-lmin+2);
+    struct_local_var = dmatrix(0,N*NS-1,0,2*Nother*(NCG-1)-1);
+    double mean_den[NCG];
+    double mean_den_inherent[NCG];
+    double mean_rest[2*Nother*NCG];
+
+    for (int s=0; s<NS;s++) { // loop over structures
+        for (int i=0; i<N;i++) { // loop over particles
+
+            for (int c=0; c<NCG; c++) {
+                mean_den[c] = 0.0;
+                mean_den_inherent[c] = 0.0;
+                for (int k=0; k<2*Nother; k++) {
+                     mean_rest[c+NCG*k] = 0.0;   
+                }
+            }
+            //double mean=0.0;
+            for (int j=0; j<N;j++) { // loop over particle pairs
+                double dr = 0.0, dx;
+                double dr_inherent = 0.0, dx_inherent;
+                for (int d=0; d<dim;d++) {
+                    dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
+                    apply_pbc(dx);
+                    dr += dx*dx;
+                    dx_inherent = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
+                    apply_pbc(dx_inherent);
+                    dr_inherent += dx_inherent*dx_inherent;
+                }
+                dr = sqrt(dr);
+                dr_inherent = sqrt(dr_inherent);
+
+                for (int c=0; c<NCG; c++) {
+                    double L = c;
+                    L/=2.0;
+                    if (L < 0.1) L = 0.1;
+                    double w = exp(-dr/L);
+                    mean_den[c] += w;
+                    double w_inherent = exp(-dr_inherent/L);
+                    mean_den_inherent[c] += w_inherent;
+
+                    for (int k=0; k<Nother; k++) {
+                        /*if (s==0 && i==0 && c==2 && k==0 && w>0.01) {
+                            std::cout << w << " " << struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N] << " " << struct_local[NCG*(struct_base_flag+2*k+2)+c][i+s*N] << std::endl;
+                            mean += w*struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N];
+                        }*/
+                        mean_rest[c+NCG*2*k] += w*(struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N]-struct_local[NCG*(struct_base_flag+2*k+2)+c][i+s*N])*(struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N]-struct_local[NCG*(struct_base_flag+2*k+2)+c][i+s*N]);
+                        mean_rest[c+NCG*(2*k+1)] += w_inherent*(struct_local[NCG*(struct_base_flag+2*k+3)][j+s*N]-struct_local[NCG*(struct_base_flag+2*k+3)+c][i+s*N])*(struct_local[NCG*(struct_base_flag+2*k+3)][j+s*N]-struct_local[NCG*(struct_base_flag+2*k+3)+c][i+s*N]);
+                    }
+                }
+            }
+            //if (s==0 && i==0) std::cout << mean/mean_den[2] << std::endl;
+
+            //std::cout << mean_epot[0]/mean_den[0] << " " << mean_epot[1]/mean_den[1] << " " << mean_epot[2]/mean_den[2] << " " << mean_epot[3]/mean_den[3] << std::endl;
+
+            for (int c=1; c<NCG; c++) {
+                double L = c;
+                L/=2.0;
+                for (int k=0; k<Nother; k++) {
+                    struct_local_var[i+s*N][(NCG-1)*(2*k)+c-1] = mean_rest[c+NCG*2*k]/mean_den[c];
+                    // calculate standard deviation
+                    struct_local_var[i+s*N][(NCG-1)*(2*k)+c-1] = sqrt(struct_local_var[i+s*N][(NCG-1)*(2*k)+c-1]);
+
+                    struct_local_var[i+s*N][(NCG-1)*(2*k+1)+c-1] = mean_rest[c+NCG*(2*k+1)]/mean_den_inherent[c];
+                    struct_local_var[i+s*N][(NCG-1)*(2*k+1)+c-1] = sqrt(struct_local_var[i+s*N][(NCG-1)*(2*k+1)+c-1]);
+                }
+            }
+
+            
+
+        }
+    }
+
     // normalize physical structural descriptors to have mean zero and unit variance
     double ** struct_local_norm; 
     struct_local_norm = dmatrix(0,N*NS-1,0,NStructTotal*NCG-1);
@@ -371,6 +477,23 @@ void write_descriptors_csv_phys(){
             if (var > 0.00000001) struct_local_norm[i][k] /= var;
         }
     }
+    double ** struct_std_norm; 
+    struct_std_norm = dmatrix(0,N*NS-1,0,2*Nother*(NCG-1)-1);
+    for (int k=0; k<2*Nother*(NCG-1);k++) {
+        double mean = 0.0;
+        double var = 0.0;
+        for (int i=0; i<N*NS;i++) {
+            mean += struct_local_var[i][k];
+            var += struct_local_var[i][k]*struct_local_var[i][k];
+        }
+        mean/=N*NS;
+        var=sqrt(var/(N*NS)- mean*mean);
+
+        for (int i=0; i<N*NS;i++) {
+            struct_std_norm[i][k] = struct_local_var[i][k] - mean;
+            if (var > 0.00000001) struct_std_norm[i][k] /= var;
+        }
+    }
 
     QString pathOrig = QString::fromStdString(folderOut);
     QString pathPred = pathOrig;
@@ -383,16 +506,19 @@ void write_descriptors_csv_phys(){
     //write header
     outPred2 << "TYPE" << ",";
     for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred2 << QString::fromStdString(StructNames[k]) << "CGP" << c << ",";
+    for (int k=0; k<2*Nother; k++) for (int c=1; c<NCG; c++) outPred2 << QString::fromStdString(StructNames[struct_base_flag+2+k]) << "CGSTD" << c << ",";
     outPred2 << "\n";
     // write body
     for (int i=0; i<N*NS; i++) {
         outPred2 << type_data[i] << ",";
         for (int k=0; k<NStructTotal*NCG; k++) outPred2 << struct_local_norm[i][k] << ",";
+        for (int k=0; k<2*Nother*(NCG-1); k++) outPred2 << struct_std_norm[i][k] << ",";
         outPred2 << "\n";
     }
     outfilePred2.close();
     
     free_dmatrix(struct_local_norm,0,N*NS-1,0,NStructTotal*NCG-1);
+    free_dmatrix(struct_std_norm,0,N*NS-1,0,2*Nother*(NCG-1)-1);
     
 }
 

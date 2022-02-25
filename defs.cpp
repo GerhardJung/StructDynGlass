@@ -129,7 +129,7 @@ void allocate_storage(){
     if (NStructTotal>0) struct_local = dmatrix(0,NStructTotal*NCG-1,0,N*NS-1);
 
     struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
-    hessian = dmatrix(0,N*N-1,0,dim*dim-1);
+    if(struct_soft_modes_flag>=0 || rp_flag==0) hessian = dmatrix(0,N*N-1,0,dim*dim-1);
     if(struct_soft_modes_flag>=0) {
         hessian_evectors = dmatrix(0,N*dim-1,0,N*dim-1);
         hessian_evalues = dvector(0,NS*N*dim-1);
