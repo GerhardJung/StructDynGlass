@@ -39,7 +39,7 @@ std::string * StructNames;
 int struct_base_flag=-1;       // flag for the very basic structural descriptors
 int NHistoGr;
 double rcut2;            // cutoff for neighbor search
-int lmax=7;
+int lmax=10;
 int lmin=1;
 
 int struct_soft_modes_flag=-1;       // flag for structural descriptors connected to soft modes
@@ -143,7 +143,7 @@ void allocate_storage(){
     // allocate dyn-struct correlation data and histogramms
     if (NDynTotal>0) dyn_hist_iso = dmatrix(0,NT*NDynTotal-1,0,NTYPE*NHisto-1);
     if (NDynTotal>0) dyn_hist_val = dmatrix(0,NT*NDynTotal-1,0,NTYPE*NHisto-1);
-    if (NDynTotal>0) dyn_ranges_time = dmatrix(0,NDynTotal-1,0,NT*3-1);
+    if (NDynTotal>0) dyn_ranges_time = dmatrix(0,NDynTotal-1,0,2*NT-1);
     if (NStructTotal>0) struct_ranges = dmatrix(0,NCG*NStructTotal-1,0,1);
     if (NStructTotal>0) struct_hist = dmatrix(0,NCG*NStructTotal-1,0,NTYPE*NHistoStruct-1);
     dyn_struct_hist_iso = dmatrix(0,NTYPE-1,0,NHisto*NHistoStruct-1);

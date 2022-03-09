@@ -72,37 +72,40 @@ void eval_struct_filion(){
     //normalize_cg_descriptors(1,struct_filion_classifiers_inherent);
 
     // print descriptors
-    QString pathPred = QString::fromStdString(folderOut);
-    pathPred.append("struct_filion_thermal.csv");
-    QFile outfilePred3(pathPred);   // input file with xyz
-    outfilePred3.open(QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream outPred3(&outfilePred3);
-    //write header
-    outPred3 << "TYPE" << ",";
-    for (int cg=0; cg <= CG_NMAX; cg++) {
-        for (int type=0; type<NTYPE; type++) {
-            for (int k=0;k<NRadial;k++) {
-                outPred3 << "CG" << cg << ":R" << struct_filion_descriptor_list[k][0] << ":" << struct_filion_descriptor_list[k][1] << ":T" << type << ",";
-            }
-        }
-        for (int k=0;k<NAngular;k++) {
-            outPred3 << "CG" << cg << ":A" << struct_filion_descriptor_list[NRadial+k][0] << ":" << struct_filion_descriptor_list[NRadial+k][1] << ":" << struct_filion_descriptor_list[NRadial+k][2];
-            if (cg != CG_NMAX || k!= NAngular-1) outPred3 << ",";
-        }
-    }
-    outPred3 << "\n";
-    // write body
-    for (int i=0; i<N*NS; i++) {
-        outPred3 << type_data[i] << ",";
+    for (int type=0; type<NTYPE; type++) {
+        QString pathPred = QString::fromStdString(folderOut);
+        pathPred.append("struct_filion_thermal_type");
+        pathPred.append(QString("%1.csv").arg(type));
+        QFile outfilePred3(pathPred);   // input file with xyz
+        outfilePred3.open(QIODevice::WriteOnly | QIODevice::Text);
+        QTextStream outPred3(&outfilePred3);
+        //write header
         for (int cg=0; cg <= CG_NMAX; cg++) {
-            for (int k=0;k<NTot;k++) {
-                outPred3 << struct_filion_classifiers_thermal[i][NTot*cg+k];
-                if (cg != CG_NMAX || k!= NTot-1) outPred3 << ",";
+            for (int type=0; type<NTYPE; type++) {
+                for (int k=0;k<NRadial;k++) {
+                    outPred3 << "CG" << cg << ":R" << struct_filion_descriptor_list[k][0] << ":" << struct_filion_descriptor_list[k][1] << ":T" << type << ",";
+                }
+            }
+            for (int k=0;k<NAngular;k++) {
+                outPred3 << "CG" << cg << ":A" << struct_filion_descriptor_list[NRadial+k][0] << ":" << struct_filion_descriptor_list[NRadial+k][1] << ":" << struct_filion_descriptor_list[NRadial+k][2];
+                if (cg != CG_NMAX || k!= NAngular-1) outPred3 << ",";
             }
         }
         outPred3 << "\n";
+        // write body
+        for (int i=0; i<N*NS; i++) {
+            if (type_data[i] == type) {
+                for (int cg=0; cg <= CG_NMAX; cg++) {
+                    for (int k=0;k<NTot;k++) {
+                        outPred3 << struct_filion_classifiers_thermal[i][NTot*cg+k];
+                        if (cg != CG_NMAX || k!= NTot-1) outPred3 << ",";
+                    }
+                }
+                outPred3 << "\n";
+            }
+        }
+        outfilePred3.close();
     }
-    outfilePred3.close();
 
     /*QString pathPred1 = QString::fromStdString(folderOut);
     pathPred1.append("struct_filion_inherent.csv");
@@ -303,7 +306,7 @@ void collect_angular_descriptors(int i, double * struct_filion_save, double ** s
                 double imag_val = struct_filion_save[2*k*(2*lmax+1)+2*(m+lmax)+1];
                 struct_filion_classifiers[i][NTYPE*NRadial+k] +=  (real_val*real_val + imag_val*imag_val)/struct_filion_save[2*NAngular*(2*lmax+1)+k];
             }
-            struct_filion_classifiers[i][NTYPE*NRadial+k] = sqrt(4.0*M_PI/(2*l+1)*struct_filion_classifiers[i][NTYPE*NRadial+k]);
+            struct_filion_classifiers[i][NTYPE*NRadial+k] = sqrt(4.0*M_PI/(2.0*l+1)*struct_filion_classifiers[i][NTYPE*NRadial+k]);
         }
 
     }
@@ -495,27 +498,28 @@ void write_descriptors_csv_phys(){
         }
     }
 
-    QString pathOrig = QString::fromStdString(folderOut);
-    QString pathPred = pathOrig;
-
-    pathPred = pathOrig;
-    pathPred.append("struct_filion_phys.csv");
-    QFile outfilePred2(pathPred);   // input file with xyz
-    outfilePred2.open(QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream outPred2(&outfilePred2);
-    //write header
-    outPred2 << "TYPE" << ",";
-    for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred2 << QString::fromStdString(StructNames[k]) << "CGP" << c << ",";
-    for (int k=0; k<2*Nother; k++) for (int c=1; c<NCG; c++) outPred2 << QString::fromStdString(StructNames[struct_base_flag+2+k]) << "CGSTD" << c << ",";
-    outPred2 << "\n";
-    // write body
-    for (int i=0; i<N*NS; i++) {
-        outPred2 << type_data[i] << ",";
-        for (int k=0; k<NStructTotal*NCG; k++) outPred2 << struct_local_norm[i][k] << ",";
-        for (int k=0; k<2*Nother*(NCG-1); k++) outPred2 << struct_std_norm[i][k] << ",";
+    for (int type=0; type<NTYPE; type++) {
+        QString pathOrig = QString::fromStdString(folderOut);
+        QString pathPred = pathOrig;
+        pathPred.append("struct_filion_phys_type");
+        pathPred.append(QString("%1.csv").arg(type));
+        QFile outfilePred2(pathPred);   // input file with xyz
+        outfilePred2.open(QIODevice::WriteOnly | QIODevice::Text);
+        QTextStream outPred2(&outfilePred2);
+        //write header
+        for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred2 << QString::fromStdString(StructNames[k]) << "CGP" << c << ",";
+        for (int k=0; k<2*Nother; k++) for (int c=1; c<NCG; c++) outPred2 << QString::fromStdString(StructNames[struct_base_flag+2+k]) << "CGSTD" << c << ",";
         outPred2 << "\n";
+        // write body
+        for (int i=0; i<N*NS; i++) {
+            if (type_data[i] == type) {
+                for (int k=0; k<NStructTotal*NCG; k++) outPred2 << struct_local_norm[i][k] << ",";
+                for (int k=0; k<2*Nother*(NCG-1); k++) outPred2 << struct_std_norm[i][k] << ",";
+                outPred2 << "\n";
+            }
+        }
+        outfilePred2.close();
     }
-    outfilePred2.close();
     
     free_dmatrix(struct_local_norm,0,N*NS-1,0,NStructTotal*NCG-1);
     free_dmatrix(struct_std_norm,0,N*NS-1,0,2*Nother*(NCG-1)-1);
@@ -524,22 +528,25 @@ void write_descriptors_csv_phys(){
 
 void write_descriptors_csv_dyn(){
 
-    QString pathOrig = QString::fromStdString(folderOut);
-    QString pathPred = pathOrig;
-    pathPred.append("struct_filion_labels.csv");
-    QFile outfilePred(pathPred);   // input file with xyz
-    outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream outPred(&outfilePred);
-    //write header
-    outPred << "TYPE" << ",";
-    for (int k=0; k<NDynTotal; k++) for (int t=1; t<NT; t++) outPred << QString::fromStdString(DynNames[k]) << t << ",";
-    outPred << "\n";
-    // write body
-    for (int i=0; i<N*NS; i++) {
-        outPred << type_data[i] << ",";
-        for (int k=0; k<NDynTotal; k++) for (int t=1; t<NT; t++) outPred << dyn_avg_save[i][k*NT+t] << ",";
+    for (int type=0; type<NTYPE; type++) {
+        QString pathOrig = QString::fromStdString(folderOut);
+        QString pathPred = pathOrig;
+        pathPred.append("struct_filion_labels_type");
+        pathPred.append(QString("%1.csv").arg(type));
+        QFile outfilePred(pathPred);   // input file with xyz
+        outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
+        QTextStream outPred(&outfilePred);
+        //write header
+        for (int k=0; k<NDynTotal; k++) for (int t=1; t<NT; t++) outPred << QString::fromStdString(DynNames[k]) << t << ",";
         outPred << "\n";
+        // write body
+        for (int i=0; i<N*NS; i++) {
+            if (type_data[i] == type) {
+                for (int k=0; k<NDynTotal; k++) for (int t=1; t<NT; t++) outPred << dyn_avg_save[i][k*NT+t] << ",";
+                outPred << "\n";
+            }
+        }
+        outfilePred.close();
     }
-    outfilePred.close();
     
 }

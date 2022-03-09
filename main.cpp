@@ -242,7 +242,7 @@
     if (struct_filion_flag>=0) eval_struct_filion();
     if (struct_read_flag>=0) eval_struct_read();
 
-    if (struct_filion_flag >= 0 && NStructTotal>=0) write_descriptors_csv_phys();
+    if (NStructTotal>0) write_descriptors_csv_phys();
 
     // eval boundaries and structural histogramms
     calc_bonds_histograms_structure();
@@ -255,7 +255,7 @@
     if (msd_flag>=0) eval_msd();
 
     // print learning batches for machine learning
-    if (struct_filion_flag >= 0 && NDynTotal>0) write_descriptors_csv_dyn();
+    if (NDynTotal>0) write_descriptors_csv_dyn();
 
     // print xyz
     print_xyz_isoconf();
