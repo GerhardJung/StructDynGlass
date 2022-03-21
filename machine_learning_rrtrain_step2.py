@@ -27,7 +27,7 @@ NSTrain=70
 lambda_ridge=0.2
 
 dyn_array = ['MD']
-mode_array = ['basic']
+mode_array = ['basic_phys_inh']
 #dyn_array = ['MD', 'LOG(FRES)']
 #mode_array = ['basic', 'basic_phys_inh', 'basic_phys']
 
@@ -52,10 +52,10 @@ for m in mode_array:
 					names_list_phys.append(x)
 
 			# read simulation data
-			KA2D_labels_full = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst/struct_filion_labels_type0.csv",nrows=NSTrain*NLOC)
-			KA2D_features_phys = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst/struct_filion_phys_type0.csv",nrows=NSTrain*NLOC, usecols=names_list_phys)
+			KA2D_labels_full = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst2/struct_filion_labels_type0.csv",nrows=NSTrain*NLOC)
+			KA2D_features_phys = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst2/struct_filion_phys_type0.csv",nrows=NSTrain*NLOC, usecols=names_list_phys)
 			#print(KA2D_features_phys)
-			KA2D_features_thermal = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst/struct_filion_thermal_type0.csv",nrows=NSTrain*NLOC, usecols=names_list_cg)
+			KA2D_features_thermal = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst2/struct_filion_thermal_type0.csv",nrows=NSTrain*NLOC, usecols=names_list_cg)
 			#print(KA2D_features_thermal)
 
 		
@@ -67,6 +67,9 @@ for m in mode_array:
 				
 			if m=='basic_phys_inh' or m=='basic_phys' :	
 				KA2D_features = pd.concat([KA2D_features_phys,KA2D_features_thermal], axis=1)
+				
+			length=KA2D_features.shape[1]
+			print(length)
 					
 			rr0 = Ridge(alpha=lambda_ridge) 
 			rr0.fit(KA2D_features, KA2D_labels)

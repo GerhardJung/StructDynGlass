@@ -242,7 +242,7 @@
     if (struct_filion_flag>=0) eval_struct_filion();
     if (struct_read_flag>=0) eval_struct_read();
 
-    if (NStructTotal>0) write_descriptors_csv_phys();
+    write_descriptors_csv_phys();
 
     // eval boundaries and structural histogramms
     calc_bonds_histograms_structure();

@@ -1,6 +1,7 @@
 /* Implement structural descriptors for the machine-learning technique as described in arXiv:2105.05921v1 */
 
 #include "struct_filion.h"
+#include "struct_base.h"
 #include "defs.h"
 #include "pbc.h"
 
@@ -37,27 +38,31 @@ void eval_struct_filion(){
                     double dr_inh=0.0, dx_inh[dim];
                     for (int d=0; d<dim;d++) {
                         dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
-                        dx_inh[d] = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
+                        dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
                         apply_pbc(dx[d]);
                         apply_pbc(dx_inh[d]);
                         dr += dx[d]*dx[d];
                         dr_inh += dx_inh[d]*dx_inh[d];
                     }
+                    dr = sqrt(dr);
 
-                    if (dr < 36.0) { // all other contributions are negligible
+                    if (dr < 6.0) { // all other contributions are negligible
                         // eval radial descriptors
-                        eval_radial(i+s*N,jType,dx,sqrt(dr),struct_filion_classifiers_thermal);
+                        eval_radial(i+s*N,jType,dx,dr,struct_filion_classifiers_thermal);
                         //eval_radial(i+s*N,jType,dx_inh,sqrt(dr_inh),struct_filion_classifiers_inherent);
                     }
 
-                    if (dr < 10.0) {  // all other contributions are negligible
+                    if (dr < 1.5) {  // all other contributions are negligible
                         // eval angular descriptors
-                        eval_angular(i+s*N,dx,sqrt(dr),struct_filion_save_thermal);
+                        eval_angular(i+s*N,dx,dr,struct_filion_save_thermal);
                         //eval_angular(i+s*N,dx_inh,sqrt(dr_inh),struct_filion_save_inherent);
                     }
                     
+                    // calculate epot
+                    if (dr_inh < RC2LJ) struct_local_filion[NCG][i+s*N] += 0.5*calc_epot(i+s*N, j+s*N, dr_inh);
                 } 
             }
+            //if (i<5) std::cout << struct_local_filion[NCG][i+s*N] << std::endl;
 
             // collect angular descriptors
             collect_angular_descriptors(i+s*N, struct_filion_save_thermal, struct_filion_classifiers_thermal);
@@ -138,6 +143,14 @@ void eval_struct_filion(){
         outPred1 << "\n";
     }
     outfilePred1.close();*/
+
+    std::cout << "EVAL STRUCT FILION 5 " << std::endl; 
+
+    // coarse-grain and calculate density
+    eval_den_cg_filion();
+
+    // write physical descriptors
+    write_descriptors_csv_phys();
 
     // free memory
     free_dmatrix(struct_filion_classifiers_thermal,0,N*NS-1,0,NTot*(CG_NMAX+1)-1);
@@ -222,8 +235,9 @@ void init_descriptors(){
 
 void eval_radial(int i,int jType,double * dx, double dr, double ** out){
     for (int k=0;k<NRadial;k++) {
-        double dist = dr-struct_filion_descriptor_list[k][0];
-        out[i][jType*NRadial+k] +=  exp( - dist * dist * struct_filion_descriptor_list[k][1] );
+        //double dist = dr-struct_filion_descriptor_list[k][0];
+        //out[i][jType*NRadial+k] +=  exp( - dist * dist * struct_filion_descriptor_list[k][1] );
+        if (dr < struct_filion_descriptor_list[k][0]) out[i][jType*NRadial+k] += 1.0;
     }
 }
 
@@ -240,7 +254,8 @@ void eval_angular(int i,double * dx, double dr, double * out){
         for (int k=0;k<NAngular;k++) {
             int ind = NRadial + k;
             double dist = dr-struct_filion_descriptor_list[ind][0];
-            double factor = exp( - dist * dist * struct_filion_descriptor_list[ind][1] );
+            //double factor = exp( - dist * dist * struct_filion_descriptor_list[ind][1] );
+            double factor = 1.0;
             int l =  struct_filion_descriptor_list[ind][2] + 0.01;
             //std::cout << l << " " << factor*psi[2*l] << " " << psi[2*l] << " " << factor << std::endl;
             out[2*k] +=  factor*psi[2*l];
@@ -253,7 +268,6 @@ void eval_angular(int i,double * dx, double dr, double * out){
         if (dx[0] < 0) 
             if (dx[1]<0) phiij=phiij - M_PI;
             else phiij=phiij + M_PI;
-        if (dx[0])
 
         // prepare spherical harmonics
         for (int l=lmin; l<lmax;l++) {
@@ -326,7 +340,7 @@ void normalize_cg_descriptors(int struct_filion_mode, double ** struct_filion_cl
                     double dr=0.0, dx[dim];
                     for (int d=0; d<dim;d++) {
                         if (struct_filion_mode == 1) dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
-                        else dx[d] = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
+                        else dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
                         apply_pbc(dx[d]);
                         dr += dx[d]*dx[d];
                     }
@@ -384,117 +398,74 @@ void normalize_cg_descriptors(int struct_filion_mode, double ** struct_filion_cl
        std::cout << "EVAL STRUCT FILION 4 " << std::endl; 
 
 }
-                
 
-void write_descriptors_csv_phys(){
-
-    // calculate additional structural descriptors
-    double ** struct_local_var; 
-    int Nother = (lmax-lmin+2);
-    struct_local_var = dmatrix(0,N*NS-1,0,2*Nother*(NCG-1)-1);
-    double mean_den[NCG];
+// iterate over all particles to calculate coarse-grained quantities and density
+void eval_den_cg_filion(){
     double mean_den_inherent[NCG];
-    double mean_rest[2*Nother*NCG];
+    double mean_epot[NCG];
 
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
 
             for (int c=0; c<NCG; c++) {
-                mean_den[c] = 0.0;
                 mean_den_inherent[c] = 0.0;
-                for (int k=0; k<2*Nother; k++) {
-                     mean_rest[c+NCG*k] = 0.0;   
-                }
+                mean_epot[c] = 0.0;   
             }
-            //double mean=0.0;
+
             for (int j=0; j<N;j++) { // loop over particle pairs
-                double dr = 0.0, dx;
                 double dr_inherent = 0.0, dx_inherent;
                 for (int d=0; d<dim;d++) {
-                    dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
-                    apply_pbc(dx);
-                    dr += dx*dx;
                     dx_inherent = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
                     apply_pbc(dx_inherent);
                     dr_inherent += dx_inherent*dx_inherent;
                 }
-                dr = sqrt(dr);
                 dr_inherent = sqrt(dr_inherent);
 
-                for (int c=0; c<NCG; c++) {
+                for (int c=1; c<NCG; c++) {
                     double L = c;
                     L/=2.0;
-                    if (L < 0.1) L = 0.1;
-                    double w = exp(-dr/L);
-                    mean_den[c] += w;
                     double w_inherent = exp(-dr_inherent/L);
                     mean_den_inherent[c] += w_inherent;
-
-                    for (int k=0; k<Nother; k++) {
-                        /*if (s==0 && i==0 && c==2 && k==0 && w>0.01) {
-                            std::cout << w << " " << struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N] << " " << struct_local[NCG*(struct_base_flag+2*k+2)+c][i+s*N] << std::endl;
-                            mean += w*struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N];
-                        }*/
-                        mean_rest[c+NCG*2*k] += w*(struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N]-struct_local[NCG*(struct_base_flag+2*k+2)+c][i+s*N])*(struct_local[NCG*(struct_base_flag+2*k+2)][j+s*N]-struct_local[NCG*(struct_base_flag+2*k+2)+c][i+s*N]);
-                        mean_rest[c+NCG*(2*k+1)] += w_inherent*(struct_local[NCG*(struct_base_flag+2*k+3)][j+s*N]-struct_local[NCG*(struct_base_flag+2*k+3)+c][i+s*N])*(struct_local[NCG*(struct_base_flag+2*k+3)][j+s*N]-struct_local[NCG*(struct_base_flag+2*k+3)+c][i+s*N]);
-                    }
+                    mean_epot[c] += w_inherent*struct_local_filion[NCG][j+s*N];
                 }
             }
-            //if (s==0 && i==0) std::cout << mean/mean_den[2] << std::endl;
 
             //std::cout << mean_epot[0]/mean_den[0] << " " << mean_epot[1]/mean_den[1] << " " << mean_epot[2]/mean_den[2] << " " << mean_epot[3]/mean_den[3] << std::endl;
-
+            struct_local_filion[0][i+s*N] = 0.0;
             for (int c=1; c<NCG; c++) {
                 double L = c;
                 L/=2.0;
-                for (int k=0; k<Nother; k++) {
-                    struct_local_var[i+s*N][(NCG-1)*(2*k)+c-1] = mean_rest[c+NCG*2*k]/mean_den[c];
-                    // calculate standard deviation
-                    struct_local_var[i+s*N][(NCG-1)*(2*k)+c-1] = sqrt(struct_local_var[i+s*N][(NCG-1)*(2*k)+c-1]);
-
-                    struct_local_var[i+s*N][(NCG-1)*(2*k+1)+c-1] = mean_rest[c+NCG*(2*k+1)]/mean_den_inherent[c];
-                    struct_local_var[i+s*N][(NCG-1)*(2*k+1)+c-1] = sqrt(struct_local_var[i+s*N][(NCG-1)*(2*k+1)+c-1]);
-                }
+                struct_local_filion[c][i+s*N] = mean_den_inherent[c]/((L+1.0)*(L+1.0)*(L+1.0) );
+                struct_local_filion[NCG+c][i+s*N] = mean_epot[c]/mean_den_inherent[c];
             }
-
-            
 
         }
     }
+
+}                
+
+void write_descriptors_csv_phys(){
+
+    // calculate additional structural descriptors
+    std::cout << "WRITE DESCRIPTORS PHYS " << std::endl; 
 
     // normalize physical structural descriptors to have mean zero and unit variance
     double ** struct_local_norm; 
-    struct_local_norm = dmatrix(0,N*NS-1,0,NStructTotal*NCG-1);
-    for (int k=0; k<NStructTotal*NCG;k++) {
+    struct_local_norm = dmatrix(0,N*NS-1,0,2*NCG-1);
+    for (int k=0; k<2*NCG;k++) {
         double mean = 0.0;
         double var = 0.0;
         for (int i=0; i<N*NS;i++) {
-            mean += struct_local[k][i];
-            var += struct_local[k][i]*struct_local[k][i];
+            mean += struct_local_filion[k][i];
+            var += struct_local_filion[k][i]*struct_local_filion[k][i];
         }
         mean/=N*NS;
         var=sqrt(var/(N*NS)- mean*mean);
 
         for (int i=0; i<N*NS;i++) {
-            struct_local_norm[i][k] = struct_local[k][i] - mean;
+            struct_local_norm[i][k] = struct_local_filion[k][i] - mean;
             if (var > 0.00000001) struct_local_norm[i][k] /= var;
-        }
-    }
-    double ** struct_std_norm; 
-    struct_std_norm = dmatrix(0,N*NS-1,0,2*Nother*(NCG-1)-1);
-    for (int k=0; k<2*Nother*(NCG-1);k++) {
-        double mean = 0.0;
-        double var = 0.0;
-        for (int i=0; i<N*NS;i++) {
-            mean += struct_local_var[i][k];
-            var += struct_local_var[i][k]*struct_local_var[i][k];
-        }
-        mean/=N*NS;
-        var=sqrt(var/(N*NS)- mean*mean);
-
-        for (int i=0; i<N*NS;i++) {
-            struct_std_norm[i][k] = struct_local_var[i][k] - mean;
-            if (var > 0.00000001) struct_std_norm[i][k] /= var;
+            //if (i<5 && k==NCG) std::cout << struct_local_norm[i][NCG] << std::endl;
         }
     }
 
@@ -507,14 +478,13 @@ void write_descriptors_csv_phys(){
         outfilePred2.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred2(&outfilePred2);
         //write header
-        for (int k=0; k<NStructTotal; k++) for (int c=0; c<NCG; c++) outPred2 << QString::fromStdString(StructNames[k]) << "CGP" << c << ",";
-        for (int k=0; k<2*Nother; k++) for (int c=1; c<NCG; c++) outPred2 << QString::fromStdString(StructNames[struct_base_flag+2+k]) << "CGSTD" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "DEN_CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "EPOT_CGP" << c << ",";
         outPred2 << "\n";
         // write body
         for (int i=0; i<N*NS; i++) {
             if (type_data[i] == type) {
-                for (int k=0; k<NStructTotal*NCG; k++) outPred2 << struct_local_norm[i][k] << ",";
-                for (int k=0; k<2*Nother*(NCG-1); k++) outPred2 << struct_std_norm[i][k] << ",";
+                for (int k=0; k<2*NCG; k++) outPred2 << struct_local_norm[i][k] << ",";
                 outPred2 << "\n";
             }
         }
@@ -522,7 +492,6 @@ void write_descriptors_csv_phys(){
     }
     
     free_dmatrix(struct_local_norm,0,N*NS-1,0,NStructTotal*NCG-1);
-    free_dmatrix(struct_std_norm,0,N*NS-1,0,2*Nother*(NCG-1)-1);
     
 }
 

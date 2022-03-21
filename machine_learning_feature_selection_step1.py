@@ -27,19 +27,17 @@ NSTrain=70
 lambda_ridge=0.2
 
 dyn_array = ['MD']
-mode_array = ['basic']
+mode_array = ['basic_phys_inh']
 #dyn_array = ['MD', 'LOG(FRES)']
 #mode_array = ['basic', 'basic_phys_inh', 'basic_phys']
 
 # read simulation data
-KA2D_labels_full = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst/struct_filion_labels_type0.csv",nrows=NSTrain*NLOC)
-KA2D_features_phys = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst/struct_filion_phys_type0.csv",nrows=NSTrain*NLOC)
+KA2D_labels_full = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst2/struct_filion_labels_type0.csv",nrows=NSTrain*NLOC)
+KA2D_features_phys = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst2/struct_filion_phys_type0.csv",nrows=NSTrain*NLOC)
 KA2D_features_phys = KA2D_features_phys.iloc[: , :-1]
-KA2D_features_phys=KA2D_features_phys.loc[:,KA2D_features_phys.columns.str.contains('INH')]
-KA2D_features_phys=KA2D_features_phys.loc[:,~KA2D_features_phys.columns.str.contains('STD')]
-KA2D_features_phys=KA2D_features_phys.loc[:,~KA2D_features_phys.columns.str.contains('PSI')]
+KA2D_features_phys=KA2D_features_phys.loc[:,~KA2D_features_phys.columns.str.contains('DEN_CGP0')]
 print(KA2D_features_phys)
-KA2D_features_thermal = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst/struct_filion_thermal_type0.csv",nrows=NSTrain*NLOC)
+KA2D_features_thermal = pd.read_csv("../../../evaluatation/KA_model/eval_ml_T0.44_bapst2/struct_filion_thermal_type0.csv",nrows=NSTrain*NLOC)
 
 for m in mode_array:
 	for d in dyn_array:
@@ -70,8 +68,8 @@ for m in mode_array:
 			# optimization loop
 			corr0_max = -1.0
 			names_list_max = []
-			nstart=110
-			nstep=10
+			nstart=30
+			nstep=8
 
 			
 			for x in range(100):
@@ -97,13 +95,12 @@ for m in mode_array:
 				indices1 = score[:nstart]
 				remove_list = []
 				if x == 0:
-					indices= (abs(mean)).argsort()[:50]
+					indices= (abs(mean)).argsort()[:5]
 					indices_total = np.concatenate((indices1, indices), axis=0)
 					
 					# remove features with smallest mean and large std to mean ratio
 					remove_list = KA2D_features0.columns[indices_total]
 					#print (remove_list)
-					remove_list=[item for item in remove_list if 'DEN|EPOT' not in item]
 					remove_list=[item for item in remove_list if 'DEN' not in item]	
 					remove_list=[item for item in remove_list if 'EPOT' not in item]
 				else :
@@ -146,7 +143,7 @@ for m in mode_array:
 				if nstart > nstep :
 					nstart -= nstep
 
-				if (length < 100) :
+				if (length < 30) :
 					break;
 					
 			with open("features_{}{}{}.dat".format(m, d,t), 'w') as filehandle:

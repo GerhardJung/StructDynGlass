@@ -90,6 +90,7 @@ double **struct_local;
 
 double **struct_base_gr;
 
+double **struct_local_filion;
 double **struct_filion_classifiers_thermal;
 double **struct_filion_classifiers_inherent;
 
@@ -127,6 +128,7 @@ void allocate_storage(){
 
     // allocate struct data
     if (NStructTotal>0) struct_local = dmatrix(0,NStructTotal*NCG-1,0,N*NS-1);
+    if (struct_filion_flag>=0) struct_local_filion = dmatrix(0,2*NCG-1,0,N*NS-1);
 
     struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
     if(struct_soft_modes_flag>=0 || rp_flag==0) hessian = dmatrix(0,N*N-1,0,dim*dim-1);

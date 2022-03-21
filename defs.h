@@ -112,6 +112,7 @@ extern double **struct_base_gr;
 
 extern double **struct_filion_classifiers_thermal;
 extern double **struct_filion_classifiers_inherent;
+extern double **struct_local_filion;
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 extern double **dyn_ranges;

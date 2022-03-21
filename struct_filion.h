@@ -15,6 +15,7 @@ void eval_angular(int i,double * dx, double dr, double * out);
 
 void collect_angular_descriptors(int i, double * struct_filion_save,  double ** struct_filion_classifiers);
 void normalize_cg_descriptors(int struct_filion_mode,double ** struct_filion_classifiers);
+void eval_den_cg_filion();
 
 void write_descriptors_csv_phys();
 void write_descriptors_csv_dyn();
