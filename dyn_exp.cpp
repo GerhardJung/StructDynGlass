@@ -53,6 +53,9 @@ void eval_exp(){
 
     }
 
+    // calculate rearranging time scale
+    eval_timescale(flag, 0.5);
+
     // write results
     print_isoconf(flag);
 

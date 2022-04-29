@@ -11,7 +11,10 @@
 #include "struct_base.h"
 #include "struct_soft_modes.h"  
 #include "struct_filion.h"  
+#include "struct_voronoi.h"  
 #include "struct_read.h"  
+#include "struct_ml.h"
+#include "struct_gnn.h"
 #include "eval_struct.h"
 #include "global.h"
  
@@ -188,6 +191,13 @@
                 } else if (parts[0] == "MLFILION") {
                     struct_filion_flag = NStructTotal;
                     struct_filion_file = parts[1].toStdString();
+                } else if (parts[0] == "MLJUNG") {
+                    struct_ml_flag = NStructTotal;
+                } else if (parts[0] == "MLGNN") {
+                    struct_gnn_flag = NStructTotal;
+                } else if (parts[0] == "VORONOI") {
+                    struct_voronoi_flag = NStructTotal;
+                    NStructTotal+=3;
                 } else if (parts[0] == "READ") {
                     struct_read_flag = NStructTotal;
                     struct_read_Ntotal = parts[1].toInt();
@@ -230,7 +240,10 @@
     if (struct_base_flag>=0) std::cout << "    " << struct_base_flag << ": Base" << " " << NHistoGr  << std::endl;
     if (struct_soft_modes_flag>=0) std::cout << "    " << struct_soft_modes_flag << ": Soft Modes" << std::endl;
     if (struct_filion_flag>=0) std::cout << "    " << struct_filion_flag << ": ML Filion" << std::endl;
+    if (struct_ml_flag>=0) std::cout << "    " << struct_ml_flag << ": ML Jung" << std::endl;
+    if (struct_gnn_flag>=0) std::cout << "    " << struct_gnn_flag << ": ML GNN" << std::endl;
     if (struct_read_flag>=0) std::cout << "    " << struct_read_flag << ": Read Structural Descriptors " << struct_read_file << std::endl;
+    if (struct_voronoi_flag>=0) std::cout << "    " << struct_voronoi_flag << ": CALC Voronoi " << std::endl;
 
     // read files
     read_files_lammps();
@@ -240,9 +253,12 @@
     if (struct_base_flag>=0) eval_struct_base();
     if (struct_soft_modes_flag>=0) eval_struct_soft_modes();
     if (struct_filion_flag>=0) eval_struct_filion();
+    if (struct_ml_flag>=0) eval_struct_ml();
     if (struct_read_flag>=0) eval_struct_read();
+    if (struct_voronoi_flag>=0) eval_struct_voronoi();
 
-    write_descriptors_csv_phys();
+    // print out extended physical descriptors
+    if (struct_base_flag>=0) write_descriptors_csv_phys();
 
     // eval boundaries and structural histogramms
     calc_bonds_histograms_structure();
@@ -256,6 +272,9 @@
 
     // print learning batches for machine learning
     if (NDynTotal>0) write_descriptors_csv_dyn();
+
+    // write gnn
+    if (struct_gnn_flag>=0) eval_struct_gnn();
 
     // print xyz
     print_xyz_isoconf();

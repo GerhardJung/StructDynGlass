@@ -168,7 +168,7 @@ void calc_tau_alpha(int flag, int count){
     for (int s=0; s<NS;s++) { // loop over structures
       for (int i=0; i<N;i++) { // loop over particles
         for (int t=0; t<NT; t++) {
-          Ciso[type_data[i+s*N]*NT+t] += dyn_avg_save[i+s*N][t+flag*NT];
+          Ciso[type_data[i+s*N]*NT+t] += dyn_avg_save[i+s*N][t+flag*(NT+1)];
         }
       }
     }

@@ -2,9 +2,14 @@
 #include "dyn_bb.h"
 #include "defs.h"
 #include "pbc.h"
+#include "struct_base.h"
 #include "eval_isoconf.h"
 
 void eval_bb(){
+
+    int flag = bb_flag;
+
+    double * save_bb_traj = new double [NT*NI*N];
     int ** neighbors = imatrix(0,NS*N-1,0,N_NEIGH_MAX-1);
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) {
@@ -30,18 +35,26 @@ void eval_bb(){
                     checkneighbors(s, i,j, t, n0, nt, neighbors);
                     // add to probability distribution and averages
                     double C_loc= nt/((double) n0);
-                    add_histogram_avg(s,i,j,dyn_ranges[bb_flag],C_loc);
+                    add_histogram_avg(s,i,j,dyn_ranges[flag],C_loc);
                     //if (t==1 && C_loc <1) std::cout << s << " "<< i << " " << C_loc << std::endl;
+                    if (s==0) save_bb_traj[t*N*NI+j*N+i] =C_loc;
                 }
             }
         }
 
         // the main evaluation for the isoconfigurational ensemble
-        eval_isoconf(t,bb_flag);
+        eval_isoconf(t,flag);
     }
 
+    // calculate rearranging time scale
+    eval_timescale(flag, 0.5);
+
+
     // write results
-    print_isoconf(bb_flag);
+    print_traj(save_bb_traj, flag);
+
+    // write results
+    print_isoconf(flag);
 
     free_imatrix(neighbors,0,NS*N-1,0,N_NEIGH_MAX-1);
 }
@@ -62,7 +75,9 @@ void findneighbors(double rcut2, int ** neighbors) {
                     dr += dx*dx;
                 }
 
-                if (dr < rcut2 && i != j ) {
+                double sigma = determine_sigma(i,j);
+
+                if (dr < rcut2*sigma*sigma && i != j ) {
                     neighbors[i+s*N][ncount] = j;
                     ncount ++;
                 }
@@ -85,7 +100,9 @@ void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbo
             dr += dx*dx;
         }
 
-        if (dr < rcuto2) {
+        double sigma = determine_sigma(i,j);
+
+        if (dr < rcuto2*sigma*sigma) {
             nt ++;
         }
         n0 ++;

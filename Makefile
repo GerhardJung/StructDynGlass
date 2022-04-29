@@ -11,7 +11,7 @@ MAKEFILE      = Makefile
 ####### Compiler, tools and options
 
 CC            = gcc
-CXX           = g++ -I ../eigen_library
+CXX           = g++ -I../eigen_library -I../voro-master/2d/src/ -I../pickling-tools-master/src/opencontainers_1_8_5/include -I../pickling-tools-master/src  -DOC_NEW_STYLE_INCLUDES
 DEFINES       = -DQT_DEPRECATED_WARNINGS -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -O2 -Wall -W -g -w -D_REENTRANT -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -O2 -Wall -W -g -w -D_REENTRANT -fPIC $(DEFINES)
@@ -38,7 +38,7 @@ DISTNAME      = StructDynGlass1.0.0
 DISTDIR = /home/gerhardjung/Documents/machine_learning_project/StructDynGlass/.tmp/StructDynGlass1.0.0
 LINK          = g++
 LFLAGS        = -Wl,-O1 -Wl,-rpath,/home/gerhardjung/anaconda3/lib
-LIBS          = $(SUBLIBS) -L/home/gerhardjung/anaconda3/lib -lQt5Gui -lQt5Core -lGL -lpthread 
+LIBS          = $(SUBLIBS) -L/home/gerhardjung/anaconda3/lib -L../voro-master/2d/src/ -L/home/gerhardjung/Documents/machine_learning_project/pickling-tools-master/src -fno-strict-aliasing -DLINUX_ -DOC_NEW_STYLE_INCLUDES -Wno-deprecated -fno-strict-aliasing -DLINUX_ -lQt5Gui -lQt5Core -lGL -lpthread -pthread -D_REENTRANT -lvoro++_2d -lptools
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -65,8 +65,11 @@ SOURCES       = defs.cpp \
 		read_write_lammps.cpp \
 		struct_base.cpp \
 		struct_filion.cpp \
+		struct_gnn.cpp \
+		struct_ml.cpp \
 		struct_read.cpp \
-		struct_soft_modes.cpp 
+		struct_soft_modes.cpp \
+		struct_voronoi.cpp 
 OBJECTS       = defs.o \
 		dyn_bb.o \
 		dyn_exp.o \
@@ -82,8 +85,11 @@ OBJECTS       = defs.o \
 		read_write_lammps.o \
 		struct_base.o \
 		struct_filion.o \
+		struct_gnn.o \
+		struct_ml.o \
 		struct_read.o \
-		struct_soft_modes.o
+		struct_soft_modes.o \
+		struct_voronoi.o
 DIST          = ../../../anaconda3/mkspecs/features/spec_pre.prf \
 		../../../anaconda3/mkspecs/common/unix.conf \
 		../../../anaconda3/mkspecs/common/linux.conf \
@@ -274,8 +280,11 @@ DIST          = ../../../anaconda3/mkspecs/features/spec_pre.prf \
 		read_write_lammps.h \
 		struct_base.h \
 		struct_filion.h \
+		struct_gnn.h \
+		struct_ml.h \
 		struct_read.h \
-		struct_soft_modes.h defs.cpp \
+		struct_soft_modes.h \
+		struct_voronoi.h defs.cpp \
 		dyn_bb.cpp \
 		dyn_exp.cpp \
 		dyn_isf.cpp \
@@ -290,8 +299,11 @@ DIST          = ../../../anaconda3/mkspecs/features/spec_pre.prf \
 		read_write_lammps.cpp \
 		struct_base.cpp \
 		struct_filion.cpp \
+		struct_gnn.cpp \
+		struct_ml.cpp \
 		struct_read.cpp \
-		struct_soft_modes.cpp
+		struct_soft_modes.cpp \
+		struct_voronoi.cpp
 QMAKE_TARGET  = StructDynGlass
 DESTDIR       = 
 TARGET        = StructDynGlass
@@ -677,8 +689,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents ../../../anaconda3/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents defs.h dyn_bb.h dyn_exp.h dyn_isf.h dyn_msd.h dyn_rearrange_patinet.h eval_isoconf.h eval_struct.h global.h nrutil.h pbc.h read_write_lammps.h struct_base.h struct_filion.h struct_read.h struct_soft_modes.h $(DISTDIR)/
-	$(COPY_FILE) --parents defs.cpp dyn_bb.cpp dyn_exp.cpp dyn_isf.cpp dyn_msd.cpp dyn_rearrange_patinet.cpp eval_isoconf.cpp eval_struct.cpp global.cpp main.cpp nrutil.cpp pbc.cpp read_write_lammps.cpp struct_base.cpp struct_filion.cpp struct_read.cpp struct_soft_modes.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents defs.h dyn_bb.h dyn_exp.h dyn_isf.h dyn_msd.h dyn_rearrange_patinet.h eval_isoconf.h eval_struct.h global.h nrutil.h pbc.h read_write_lammps.h struct_base.h struct_filion.h struct_gnn.h struct_ml.h struct_read.h struct_soft_modes.h struct_voronoi.h $(DISTDIR)/
+	$(COPY_FILE) --parents defs.cpp dyn_bb.cpp dyn_exp.cpp dyn_isf.cpp dyn_msd.cpp dyn_rearrange_patinet.cpp eval_isoconf.cpp eval_struct.cpp global.cpp main.cpp nrutil.cpp pbc.cpp read_write_lammps.cpp struct_base.cpp struct_filion.cpp struct_gnn.cpp struct_ml.cpp struct_read.cpp struct_soft_modes.cpp struct_voronoi.cpp $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -872,11 +884,11 @@ dyn_bb.o: dyn_bb.cpp dyn_bb.h \
 		nrutil.h \
 		read_write_lammps.h \
 		pbc.h \
+		struct_base.h \
 		eval_isoconf.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dyn_bb.o dyn_bb.cpp
 
 dyn_exp.o: dyn_exp.cpp dyn_exp.h \
-		global.h \
 		defs.h \
 		../../../anaconda3/include/qt/QtCore/QTextStream \
 		../../../anaconda3/include/qt/QtCore/qtextstream.h \
@@ -950,7 +962,8 @@ dyn_exp.o: dyn_exp.cpp dyn_exp.h \
 		nrutil.h \
 		read_write_lammps.h \
 		pbc.h \
-		eval_isoconf.h
+		eval_isoconf.h \
+		eval_struct.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dyn_exp.o dyn_exp.cpp
 
 dyn_isf.o: dyn_isf.cpp dyn_isf.h \
@@ -1031,7 +1044,6 @@ dyn_isf.o: dyn_isf.cpp dyn_isf.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dyn_isf.o dyn_isf.cpp
 
 dyn_msd.o: dyn_msd.cpp dyn_msd.h \
-		global.h \
 		defs.h \
 		../../../anaconda3/include/qt/QtCore/QTextStream \
 		../../../anaconda3/include/qt/QtCore/qtextstream.h \
@@ -1105,7 +1117,8 @@ dyn_msd.o: dyn_msd.cpp dyn_msd.h \
 		nrutil.h \
 		read_write_lammps.h \
 		pbc.h \
-		eval_isoconf.h
+		eval_isoconf.h \
+		eval_struct.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dyn_msd.o dyn_msd.cpp
 
 dyn_rearrange_patinet.o: dyn_rearrange_patinet.cpp dyn_rearrange_patinet.h \
@@ -1494,7 +1507,10 @@ main.o: main.cpp defs.h \
 		struct_base.h \
 		struct_soft_modes.h \
 		struct_filion.h \
+		struct_voronoi.h \
 		struct_read.h \
+		struct_ml.h \
+		eval_struct.h \
 		global.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
@@ -1728,6 +1744,7 @@ struct_base.o: struct_base.cpp struct_base.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o struct_base.o struct_base.cpp
 
 struct_filion.o: struct_filion.cpp struct_filion.h \
+		struct_base.h \
 		defs.h \
 		../../../anaconda3/include/qt/QtCore/QTextStream \
 		../../../anaconda3/include/qt/QtCore/qtextstream.h \
@@ -1803,7 +1820,10 @@ struct_filion.o: struct_filion.cpp struct_filion.h \
 		pbc.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o struct_filion.o struct_filion.cpp
 
-struct_read.o: struct_read.cpp struct_read.h \
+struct_gnn.o: struct_gnn.cpp struct_gnn.h \
+		struct_filion.h \
+		struct_base.h \
+		dyn_bb.h \
 		defs.h \
 		../../../anaconda3/include/qt/QtCore/QTextStream \
 		../../../anaconda3/include/qt/QtCore/qtextstream.h \
@@ -1877,6 +1897,162 @@ struct_read.o: struct_read.cpp struct_read.h \
 		nrutil.h \
 		read_write_lammps.h \
 		pbc.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o struct_gnn.o struct_gnn.cpp
+
+struct_ml.o: struct_ml.cpp struct_ml.h \
+		struct_filion.h \
+		struct_base.h \
+		dyn_bb.h \
+		defs.h \
+		../../../anaconda3/include/qt/QtCore/QTextStream \
+		../../../anaconda3/include/qt/QtCore/qtextstream.h \
+		../../../anaconda3/include/qt/QtCore/qiodevice.h \
+		../../../anaconda3/include/qt/QtCore/qglobal.h \
+		../../../anaconda3/include/qt/QtCore/qconfig-bootstrapped.h \
+		../../../anaconda3/include/qt/QtCore/qconfig.h \
+		../../../anaconda3/include/qt/QtCore/qtcore-config.h \
+		../../../anaconda3/include/qt/QtCore/qsystemdetection.h \
+		../../../anaconda3/include/qt/QtCore/qprocessordetection.h \
+		../../../anaconda3/include/qt/QtCore/qcompilerdetection.h \
+		../../../anaconda3/include/qt/QtCore/qtypeinfo.h \
+		../../../anaconda3/include/qt/QtCore/qsysinfo.h \
+		../../../anaconda3/include/qt/QtCore/qlogging.h \
+		../../../anaconda3/include/qt/QtCore/qflags.h \
+		../../../anaconda3/include/qt/QtCore/qatomic.h \
+		../../../anaconda3/include/qt/QtCore/qbasicatomic.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_bootstrap.h \
+		../../../anaconda3/include/qt/QtCore/qgenericatomic.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_cxx11.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_msvc.h \
+		../../../anaconda3/include/qt/QtCore/qglobalstatic.h \
+		../../../anaconda3/include/qt/QtCore/qmutex.h \
+		../../../anaconda3/include/qt/QtCore/qnumeric.h \
+		../../../anaconda3/include/qt/QtCore/qversiontagging.h \
+		../../../anaconda3/include/qt/QtCore/qobject.h \
+		../../../anaconda3/include/qt/QtCore/qobjectdefs.h \
+		../../../anaconda3/include/qt/QtCore/qnamespace.h \
+		../../../anaconda3/include/qt/QtCore/qobjectdefs_impl.h \
+		../../../anaconda3/include/qt/QtCore/qstring.h \
+		../../../anaconda3/include/qt/QtCore/qchar.h \
+		../../../anaconda3/include/qt/QtCore/qbytearray.h \
+		../../../anaconda3/include/qt/QtCore/qrefcount.h \
+		../../../anaconda3/include/qt/QtCore/qarraydata.h \
+		../../../anaconda3/include/qt/QtCore/qstringbuilder.h \
+		../../../anaconda3/include/qt/QtCore/qlist.h \
+		../../../anaconda3/include/qt/QtCore/qalgorithms.h \
+		../../../anaconda3/include/qt/QtCore/qiterator.h \
+		../../../anaconda3/include/qt/QtCore/qhashfunctions.h \
+		../../../anaconda3/include/qt/QtCore/qpair.h \
+		../../../anaconda3/include/qt/QtCore/qbytearraylist.h \
+		../../../anaconda3/include/qt/QtCore/qstringlist.h \
+		../../../anaconda3/include/qt/QtCore/qregexp.h \
+		../../../anaconda3/include/qt/QtCore/qstringmatcher.h \
+		../../../anaconda3/include/qt/QtCore/qcoreevent.h \
+		../../../anaconda3/include/qt/QtCore/qscopedpointer.h \
+		../../../anaconda3/include/qt/QtCore/qmetatype.h \
+		../../../anaconda3/include/qt/QtCore/qvarlengtharray.h \
+		../../../anaconda3/include/qt/QtCore/qcontainerfwd.h \
+		../../../anaconda3/include/qt/QtCore/qobject_impl.h \
+		../../../anaconda3/include/qt/QtCore/qlocale.h \
+		../../../anaconda3/include/qt/QtCore/qvariant.h \
+		../../../anaconda3/include/qt/QtCore/qmap.h \
+		../../../anaconda3/include/qt/QtCore/qdebug.h \
+		../../../anaconda3/include/qt/QtCore/qhash.h \
+		../../../anaconda3/include/qt/QtCore/qvector.h \
+		../../../anaconda3/include/qt/QtCore/qpoint.h \
+		../../../anaconda3/include/qt/QtCore/qset.h \
+		../../../anaconda3/include/qt/QtCore/qcontiguouscache.h \
+		../../../anaconda3/include/qt/QtCore/qsharedpointer.h \
+		../../../anaconda3/include/qt/QtCore/qshareddata.h \
+		../../../anaconda3/include/qt/QtCore/qsharedpointer_impl.h \
+		../../../anaconda3/include/qt/QtCore/QFile \
+		../../../anaconda3/include/qt/QtCore/qfile.h \
+		../../../anaconda3/include/qt/QtCore/qfiledevice.h \
+		../../../anaconda3/include/qt/QtCore/QDir \
+		../../../anaconda3/include/qt/QtCore/qdir.h \
+		../../../anaconda3/include/qt/QtCore/qfileinfo.h \
+		../../../anaconda3/include/qt/QtCore/QDebug \
+		../../../anaconda3/include/qt/QtCore/QString \
+		nrutil.h \
+		read_write_lammps.h \
+		pbc.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o struct_ml.o struct_ml.cpp
+
+struct_read.o: struct_read.cpp struct_read.h \
+		defs.h \
+		../../../anaconda3/include/qt/QtCore/QTextStream \
+		../../../anaconda3/include/qt/QtCore/qtextstream.h \
+		../../../anaconda3/include/qt/QtCore/qiodevice.h \
+		../../../anaconda3/include/qt/QtCore/qglobal.h \
+		../../../anaconda3/include/qt/QtCore/qconfig-bootstrapped.h \
+		../../../anaconda3/include/qt/QtCore/qconfig.h \
+		../../../anaconda3/include/qt/QtCore/qtcore-config.h \
+		../../../anaconda3/include/qt/QtCore/qsystemdetection.h \
+		../../../anaconda3/include/qt/QtCore/qprocessordetection.h \
+		../../../anaconda3/include/qt/QtCore/qcompilerdetection.h \
+		../../../anaconda3/include/qt/QtCore/qtypeinfo.h \
+		../../../anaconda3/include/qt/QtCore/qsysinfo.h \
+		../../../anaconda3/include/qt/QtCore/qlogging.h \
+		../../../anaconda3/include/qt/QtCore/qflags.h \
+		../../../anaconda3/include/qt/QtCore/qatomic.h \
+		../../../anaconda3/include/qt/QtCore/qbasicatomic.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_bootstrap.h \
+		../../../anaconda3/include/qt/QtCore/qgenericatomic.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_cxx11.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_msvc.h \
+		../../../anaconda3/include/qt/QtCore/qglobalstatic.h \
+		../../../anaconda3/include/qt/QtCore/qmutex.h \
+		../../../anaconda3/include/qt/QtCore/qnumeric.h \
+		../../../anaconda3/include/qt/QtCore/qversiontagging.h \
+		../../../anaconda3/include/qt/QtCore/qobject.h \
+		../../../anaconda3/include/qt/QtCore/qobjectdefs.h \
+		../../../anaconda3/include/qt/QtCore/qnamespace.h \
+		../../../anaconda3/include/qt/QtCore/qobjectdefs_impl.h \
+		../../../anaconda3/include/qt/QtCore/qstring.h \
+		../../../anaconda3/include/qt/QtCore/qchar.h \
+		../../../anaconda3/include/qt/QtCore/qbytearray.h \
+		../../../anaconda3/include/qt/QtCore/qrefcount.h \
+		../../../anaconda3/include/qt/QtCore/qarraydata.h \
+		../../../anaconda3/include/qt/QtCore/qstringbuilder.h \
+		../../../anaconda3/include/qt/QtCore/qlist.h \
+		../../../anaconda3/include/qt/QtCore/qalgorithms.h \
+		../../../anaconda3/include/qt/QtCore/qiterator.h \
+		../../../anaconda3/include/qt/QtCore/qhashfunctions.h \
+		../../../anaconda3/include/qt/QtCore/qpair.h \
+		../../../anaconda3/include/qt/QtCore/qbytearraylist.h \
+		../../../anaconda3/include/qt/QtCore/qstringlist.h \
+		../../../anaconda3/include/qt/QtCore/qregexp.h \
+		../../../anaconda3/include/qt/QtCore/qstringmatcher.h \
+		../../../anaconda3/include/qt/QtCore/qcoreevent.h \
+		../../../anaconda3/include/qt/QtCore/qscopedpointer.h \
+		../../../anaconda3/include/qt/QtCore/qmetatype.h \
+		../../../anaconda3/include/qt/QtCore/qvarlengtharray.h \
+		../../../anaconda3/include/qt/QtCore/qcontainerfwd.h \
+		../../../anaconda3/include/qt/QtCore/qobject_impl.h \
+		../../../anaconda3/include/qt/QtCore/qlocale.h \
+		../../../anaconda3/include/qt/QtCore/qvariant.h \
+		../../../anaconda3/include/qt/QtCore/qmap.h \
+		../../../anaconda3/include/qt/QtCore/qdebug.h \
+		../../../anaconda3/include/qt/QtCore/qhash.h \
+		../../../anaconda3/include/qt/QtCore/qvector.h \
+		../../../anaconda3/include/qt/QtCore/qpoint.h \
+		../../../anaconda3/include/qt/QtCore/qset.h \
+		../../../anaconda3/include/qt/QtCore/qcontiguouscache.h \
+		../../../anaconda3/include/qt/QtCore/qsharedpointer.h \
+		../../../anaconda3/include/qt/QtCore/qshareddata.h \
+		../../../anaconda3/include/qt/QtCore/qsharedpointer_impl.h \
+		../../../anaconda3/include/qt/QtCore/QFile \
+		../../../anaconda3/include/qt/QtCore/qfile.h \
+		../../../anaconda3/include/qt/QtCore/qfiledevice.h \
+		../../../anaconda3/include/qt/QtCore/QDir \
+		../../../anaconda3/include/qt/QtCore/qdir.h \
+		../../../anaconda3/include/qt/QtCore/qfileinfo.h \
+		../../../anaconda3/include/qt/QtCore/QDebug \
+		../../../anaconda3/include/qt/QtCore/QString \
+		nrutil.h \
+		read_write_lammps.h \
+		pbc.h \
+		eval_struct.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o struct_read.o struct_read.cpp
 
 struct_soft_modes.o: struct_soft_modes.cpp struct_soft_modes.h \
@@ -1955,6 +2131,82 @@ struct_soft_modes.o: struct_soft_modes.cpp struct_soft_modes.h \
 		read_write_lammps.h \
 		pbc.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o struct_soft_modes.o struct_soft_modes.cpp
+
+struct_voronoi.o: struct_voronoi.cpp struct_voronoi.h \
+		defs.h \
+		../../../anaconda3/include/qt/QtCore/QTextStream \
+		../../../anaconda3/include/qt/QtCore/qtextstream.h \
+		../../../anaconda3/include/qt/QtCore/qiodevice.h \
+		../../../anaconda3/include/qt/QtCore/qglobal.h \
+		../../../anaconda3/include/qt/QtCore/qconfig-bootstrapped.h \
+		../../../anaconda3/include/qt/QtCore/qconfig.h \
+		../../../anaconda3/include/qt/QtCore/qtcore-config.h \
+		../../../anaconda3/include/qt/QtCore/qsystemdetection.h \
+		../../../anaconda3/include/qt/QtCore/qprocessordetection.h \
+		../../../anaconda3/include/qt/QtCore/qcompilerdetection.h \
+		../../../anaconda3/include/qt/QtCore/qtypeinfo.h \
+		../../../anaconda3/include/qt/QtCore/qsysinfo.h \
+		../../../anaconda3/include/qt/QtCore/qlogging.h \
+		../../../anaconda3/include/qt/QtCore/qflags.h \
+		../../../anaconda3/include/qt/QtCore/qatomic.h \
+		../../../anaconda3/include/qt/QtCore/qbasicatomic.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_bootstrap.h \
+		../../../anaconda3/include/qt/QtCore/qgenericatomic.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_cxx11.h \
+		../../../anaconda3/include/qt/QtCore/qatomic_msvc.h \
+		../../../anaconda3/include/qt/QtCore/qglobalstatic.h \
+		../../../anaconda3/include/qt/QtCore/qmutex.h \
+		../../../anaconda3/include/qt/QtCore/qnumeric.h \
+		../../../anaconda3/include/qt/QtCore/qversiontagging.h \
+		../../../anaconda3/include/qt/QtCore/qobject.h \
+		../../../anaconda3/include/qt/QtCore/qobjectdefs.h \
+		../../../anaconda3/include/qt/QtCore/qnamespace.h \
+		../../../anaconda3/include/qt/QtCore/qobjectdefs_impl.h \
+		../../../anaconda3/include/qt/QtCore/qstring.h \
+		../../../anaconda3/include/qt/QtCore/qchar.h \
+		../../../anaconda3/include/qt/QtCore/qbytearray.h \
+		../../../anaconda3/include/qt/QtCore/qrefcount.h \
+		../../../anaconda3/include/qt/QtCore/qarraydata.h \
+		../../../anaconda3/include/qt/QtCore/qstringbuilder.h \
+		../../../anaconda3/include/qt/QtCore/qlist.h \
+		../../../anaconda3/include/qt/QtCore/qalgorithms.h \
+		../../../anaconda3/include/qt/QtCore/qiterator.h \
+		../../../anaconda3/include/qt/QtCore/qhashfunctions.h \
+		../../../anaconda3/include/qt/QtCore/qpair.h \
+		../../../anaconda3/include/qt/QtCore/qbytearraylist.h \
+		../../../anaconda3/include/qt/QtCore/qstringlist.h \
+		../../../anaconda3/include/qt/QtCore/qregexp.h \
+		../../../anaconda3/include/qt/QtCore/qstringmatcher.h \
+		../../../anaconda3/include/qt/QtCore/qcoreevent.h \
+		../../../anaconda3/include/qt/QtCore/qscopedpointer.h \
+		../../../anaconda3/include/qt/QtCore/qmetatype.h \
+		../../../anaconda3/include/qt/QtCore/qvarlengtharray.h \
+		../../../anaconda3/include/qt/QtCore/qcontainerfwd.h \
+		../../../anaconda3/include/qt/QtCore/qobject_impl.h \
+		../../../anaconda3/include/qt/QtCore/qlocale.h \
+		../../../anaconda3/include/qt/QtCore/qvariant.h \
+		../../../anaconda3/include/qt/QtCore/qmap.h \
+		../../../anaconda3/include/qt/QtCore/qdebug.h \
+		../../../anaconda3/include/qt/QtCore/qhash.h \
+		../../../anaconda3/include/qt/QtCore/qvector.h \
+		../../../anaconda3/include/qt/QtCore/qpoint.h \
+		../../../anaconda3/include/qt/QtCore/qset.h \
+		../../../anaconda3/include/qt/QtCore/qcontiguouscache.h \
+		../../../anaconda3/include/qt/QtCore/qsharedpointer.h \
+		../../../anaconda3/include/qt/QtCore/qshareddata.h \
+		../../../anaconda3/include/qt/QtCore/qsharedpointer_impl.h \
+		../../../anaconda3/include/qt/QtCore/QFile \
+		../../../anaconda3/include/qt/QtCore/qfile.h \
+		../../../anaconda3/include/qt/QtCore/qfiledevice.h \
+		../../../anaconda3/include/qt/QtCore/QDir \
+		../../../anaconda3/include/qt/QtCore/qdir.h \
+		../../../anaconda3/include/qt/QtCore/qfileinfo.h \
+		../../../anaconda3/include/qt/QtCore/QDebug \
+		../../../anaconda3/include/qt/QtCore/QString \
+		nrutil.h \
+		read_write_lammps.h \
+		pbc.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o struct_voronoi.o struct_voronoi.cpp
 
 ####### Install
 

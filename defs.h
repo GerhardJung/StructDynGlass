@@ -15,7 +15,7 @@
 #include "nrutil.h"
 #include "read_write_lammps.h"
 
-#define NCG 12
+#define NCG 16
 
 #define EPS 0.000000001
 
@@ -75,6 +75,12 @@ extern int struct_filion_flag;
 extern std::string struct_filion_file;
 extern double ** struct_filion_descriptor_list;
 
+extern int struct_ml_flag;
+
+extern int struct_gnn_flag;
+
+extern int struct_voronoi_flag;
+
 extern int struct_read_flag;
 extern int struct_read_Ntotal;
 extern std::string struct_read_file;
@@ -103,7 +109,7 @@ extern double *dyn_sys_avg;
 extern double *dyn_avg2;
 extern double **dyn_pred;
 extern double **dyn_avg_save;
-
+extern double **dyn_avg_save_cg;
 
 //STRUCT
 extern double **struct_local;
@@ -113,6 +119,7 @@ extern double **struct_base_gr;
 extern double **struct_filion_classifiers_thermal;
 extern double **struct_filion_classifiers_inherent;
 extern double **struct_local_filion;
+extern double ** struct_mean_var; 
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 extern double **dyn_ranges;

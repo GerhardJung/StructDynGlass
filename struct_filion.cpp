@@ -4,6 +4,8 @@
 #include "struct_base.h"
 #include "defs.h"
 #include "pbc.h"
+#include "voro++_2d.hh"
+using namespace voro;
 
 #include <cmath>
 
@@ -59,7 +61,7 @@ void eval_struct_filion(){
                     }
                     
                     // calculate epot
-                    if (dr_inh < RC2LJ) struct_local_filion[NCG][i+s*N] += 0.5*calc_epot(i+s*N, j+s*N, dr_inh);
+                    if (dr_inh < RC2LJ) struct_local_filion[NTYPE*NCG][i+s*N] += 0.5*calc_epot(i+s*N, j+s*N, dr_inh);
                 } 
             }
             //if (i<5) std::cout << struct_local_filion[NCG][i+s*N] << std::endl;
@@ -69,6 +71,9 @@ void eval_struct_filion(){
             //collect_angular_descriptors(i+s*N, struct_filion_save_inherent, struct_filion_classifiers_inherent);
 
         }
+
+        // include voronoi
+        calc_voronoi(s);
     }
 
     std::cout << "EVAL STRUCT FILION 2 " << std::endl; 
@@ -97,7 +102,34 @@ void eval_struct_filion(){
             }
         }
         outPred3 << "\n";
+
         // write body
+        // length scale
+        for (int cg=0; cg <= CG_NMAX; cg++) {
+            for (int type=0; type<NTYPE; type++) {
+                for (int k=0;k<NRadial;k++) {
+                    outPred3 <<  struct_filion_descriptor_list[k][0] +cg*CG_RC << ",";
+                }
+            }
+            for (int k=0;k<NAngular;k++) {
+                outPred3 << struct_filion_descriptor_list[NRadial+k][0] +cg*CG_RC ;
+                if (cg != CG_NMAX || k!= NAngular-1) outPred3 << ",";
+            }
+        }
+        outPred3 << "\n";
+        // mean and variance
+        for (int k=0; k<(CG_NMAX+1)*NTot; k++) {
+            outPred3 << struct_mean_var[k][2*type];
+            if (k<(CG_NMAX+1)*NTot-1) outPred3 << ",";
+        }
+        outPred3 << "\n";
+        for (int k=0; k<(CG_NMAX+1)*NTot; k++) {
+            outPred3 << struct_mean_var[k][2*type+1];
+            if (k<(CG_NMAX+1)*NTot-1) outPred3 << ",";
+        }
+        outPred3 << "\n";
+
+        // particle data
         for (int i=0; i<N*NS; i++) {
             if (type_data[i] == type) {
                 for (int cg=0; cg <= CG_NMAX; cg++) {
@@ -150,7 +182,7 @@ void eval_struct_filion(){
     eval_den_cg_filion();
 
     // write physical descriptors
-    write_descriptors_csv_phys();
+    write_descriptors_csv_phys_filion();
 
     // free memory
     free_dmatrix(struct_filion_classifiers_thermal,0,N*NS-1,0,NTot*(CG_NMAX+1)-1);
@@ -231,6 +263,8 @@ void init_descriptors(){
             //struct_filion_classifiers_inherent[i][j] = 0.0;
         }
     }
+
+    struct_mean_var = dmatrix(0,NTot*(CG_NMAX+1)+19*NCG-1,0,2*NTYPE-1);
 }
 
 void eval_radial(int i,int jType,double * dx, double dr, double ** out){
@@ -289,7 +323,8 @@ void eval_angular(int i,double * dx, double dr, double * out){
         for (int k=0;k<NAngular;k++) {
             int ind = NRadial + k;
             double dist = dr-struct_filion_descriptor_list[ind][0];
-            double factor = exp( - dist * dist * struct_filion_descriptor_list[ind][1] );
+            //double factor = exp( - dist * dist * struct_filion_descriptor_list[ind][1] );
+            double factor = 1.0;
             int l =  struct_filion_descriptor_list[ind][2] + 0.01;
             //std::cout << l << " " << factor*psi[2*l] << " " << psi[2*l] << " " << factor << std::endl;
             for (int m=-l; m<=l;m++) {
@@ -344,13 +379,15 @@ void normalize_cg_descriptors(int struct_filion_mode, double ** struct_filion_cl
                         apply_pbc(dx[d]);
                         dr += dx[d]*dx[d];
                     }
-                    dr = sqrt(dr);
-                    double fac = exp(-dr/CG_RC);
-                    //std::cout << fac << std::endl;
-                    C+=fac;
-                    for (int k=0; k<NTot;k++) {
-                        struct_filion_classifiers[i+s*N][NTot*cg+k] += fac*struct_filion_classifiers[j+s*N][NTot*(cg-1)+k];
-                    }
+                    //if (dr < CG_RC*CG_RC) {
+                        dr = sqrt(dr);
+                        double fac = exp(-dr/CG_RC);
+                        //std::cout << fac << std::endl;
+                        C+=fac;
+                        for (int k=0; k<NTot;k++) {
+                            struct_filion_classifiers[i+s*N][NTot*cg+k] += fac*struct_filion_classifiers[j+s*N][NTot*(cg-1)+k];
+                        }
+                    //}
                 }
                 for (int k=0; k<NTot;k++) {
                     struct_filion_classifiers[i+s*N][NTot*cg+k] /= C;
@@ -366,21 +403,29 @@ void normalize_cg_descriptors(int struct_filion_mode, double ** struct_filion_cl
 
     // normalize descriptors to have mean zero and unit variance
     for (int k=0; k<NTot*(CG_NMAX+1);k++) {
-        double mean = 0.0;
-        double var = 0.0;
+        double mean[NTYPE] = {0.0};
+        double var[NTYPE] = {0.0};
         //std::cout << k << std::endl;
         for (int i=0; i<N*NS;i++) {
-            mean += struct_filion_classifiers[i][k];
-            var += struct_filion_classifiers[i][k]*struct_filion_classifiers[i][k];
+            //if (k==0 && i<1000) std::cout << struct_filion_classifiers[i][k] << std::endl;
+            int type = type_data[i];
+            mean[type] += struct_filion_classifiers[i][k];
+            var[type] += struct_filion_classifiers[i][k]*struct_filion_classifiers[i][k];
         }
-        mean/=N*NS;
-        var=sqrt(var/(N*NS)- mean*mean);
 
-        //std::cout << mean << " " << var << std::endl;
+        for (int type=0; type<NTYPE; type++) {
+            mean[type]/=NPerType[type]*NS;
+            var[type]=sqrt(var[type]/(NPerType[type]*NS)- mean[type]*mean[type]);
+            struct_mean_var[k][2*type] = mean[type];
+            struct_mean_var[k][2*type+1] = var[type];
+        }
 
+        //if (k==0) std::cout << mean << " " << var << std::endl;
+
+        
         for (int i=0; i<N*NS;i++) {
-            struct_filion_classifiers[i][k] -= mean;
-            if (var > 0.000001) struct_filion_classifiers[i][k] /= var;
+            //struct_filion_classifiers[i][k] -= mean;
+            //if (var > 0.000001) struct_filion_classifiers[i][k] /= var;
         }
 
         // test
@@ -399,17 +444,53 @@ void normalize_cg_descriptors(int struct_filion_mode, double ** struct_filion_cl
 
 }
 
+// calculate voronoi properties
+void calc_voronoi(int s){
+
+    container_poly_2d con(-boxL/2.0,boxL/2.0,-boxL/2.0,boxL/2.0,10,10,true,true,16);
+
+    // Add 1000 random points to the container
+	for(int i=0;i<N;i++) {
+		double sigma = 0.5;
+		if (type_data[s*N+i] == 1) sigma=0.44;
+		if (type_data[s*N+i] == 2) sigma=0.47;
+		con.put(i,xyz_inherent_data[s*N+i][0],xyz_inherent_data[s*N+i][1],sigma);
+	}
+	
+	c_loop_all_2d vl(con);
+	voronoicell_neighbor_2d c;
+	int ij,q, id;double *pp;
+	double cx,cy;
+	vector<int> vi;
+	if(vl.start()) do if(con.compute_cell(c,vl)) {
+			ij=vl.ij;q=vl.q;pp=con.p[ij]+con.ps*q;
+			c.centroid(cx,cy);
+			c.neighbors(vi);
+            id = con.id[ij][q];
+            struct_local_filion[(2*NTYPE)*NCG][id+s*N] = c.perimeter();
+            struct_local_filion[(3*NTYPE)*NCG][id+s*N] = c.area();
+            struct_local_filion[(4*NTYPE)*NCG][id+s*N] = c.perimeter()*c.perimeter()/c.area();
+            //struct_local_filion[13*NCG][id+s*N] = sqrt(cx*cx+cy*cy);
+            //struct_local_filion[16*NCG][id+s*N] = vi.size();
+            //std::cout << *pp << " " << xyz_inherent_data[s*N+id][0] << std::endl;
+			//cout <<  << " "<< *pp << " " << pp[0] << " " << c.perimeter() << " " << c.area() << " " << sqrt(cx*cx+cy*cy) << " " << vi.size() <<  std::endl;
+	} while(vl.inc());
+
+}
+
 // iterate over all particles to calculate coarse-grained quantities and density
 void eval_den_cg_filion(){
-    double mean_den_inherent[NCG];
-    double mean_epot[NCG];
+    double mean_den_inherent[NTYPE*NCG];
+    double mean_rest[4*NTYPE*NCG];
 
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
 
             for (int c=0; c<NCG; c++) {
-                mean_den_inherent[c] = 0.0;
-                mean_epot[c] = 0.0;   
+                for (int type=0; type<NTYPE; type++) mean_den_inherent[type*NCG+c] = 0.0;
+                for (int k=0; k<4*NTYPE; k++) {
+                    mean_rest[k*NCG+c] = 0.0;   
+                }
             }
 
             for (int j=0; j<N;j++) { // loop over particle pairs
@@ -424,19 +505,27 @@ void eval_den_cg_filion(){
                 for (int c=1; c<NCG; c++) {
                     double L = c;
                     L/=2.0;
+                    //if (dr_inherent < L) {
                     double w_inherent = exp(-dr_inherent/L);
-                    mean_den_inherent[c] += w_inherent;
-                    mean_epot[c] += w_inherent*struct_local_filion[NCG][j+s*N];
+                    for (int type=0; type<NTYPE; type++) {
+                        if (type==type_data[j+s*N]) {
+                            mean_den_inherent[type*NCG+c] += w_inherent;
+                            for (int k=0; k<4; k++) mean_rest[type*NCG+k*NTYPE*NCG+c] += w_inherent*struct_local_filion[NTYPE*NCG+k*NTYPE*NCG][j+s*N];
+                        }
+                    }
+                    //}
                 }
             }
 
             //std::cout << mean_epot[0]/mean_den[0] << " " << mean_epot[1]/mean_den[1] << " " << mean_epot[2]/mean_den[2] << " " << mean_epot[3]/mean_den[3] << std::endl;
-            struct_local_filion[0][i+s*N] = 0.0;
+            for (int type=0; type<NTYPE; type++) struct_local_filion[type*NCG][i+s*N] = 0.0;
             for (int c=1; c<NCG; c++) {
                 double L = c;
                 L/=2.0;
-                struct_local_filion[c][i+s*N] = mean_den_inherent[c]/((L+1.0)*(L+1.0)*(L+1.0) );
-                struct_local_filion[NCG+c][i+s*N] = mean_epot[c]/mean_den_inherent[c];
+                for (int type=0; type<NTYPE; type++) {
+                    struct_local_filion[type*NCG+c][i+s*N] = mean_den_inherent[type*NCG+c];
+                    for (int k=0; k<4; k++)  struct_local_filion[NTYPE*NCG+type*NCG+k*NTYPE*NCG+c][i+s*N] = mean_rest[type*NCG+k*NTYPE*NCG+c]/mean_den_inherent[type*NCG+c];
+                }
             }
 
         }
@@ -444,27 +533,92 @@ void eval_den_cg_filion(){
 
 }                
 
-void write_descriptors_csv_phys(){
+void write_descriptors_csv_phys_filion(){
 
     // calculate additional structural descriptors
     std::cout << "WRITE DESCRIPTORS PHYS " << std::endl; 
 
+    // calculate additional structural descriptors
+    double ** struct_local_var; 
+    double mean_den_inherent[3*NCG];
+    double mean_rest[12*NCG];
+
+    for (int s=0; s<NS;s++) { // loop over structures
+        for (int i=0; i<N;i++) { // loop over particles
+
+            for (int c=0; c<NCG; c++) {
+                for (int type=0; type<NTYPE; type++) mean_den_inherent[type*NCG+c] = 0.0;
+                for (int k=0; k<12; k++) {
+                     mean_rest[k*NCG+c] = 0.0;   
+                }
+            }
+            //double mean=0.0;
+            for (int j=0; j<N;j++) { // loop over particle pairs
+                double dr_inherent = 0.0, dx_inherent;
+                for (int d=0; d<dim;d++) {
+                    dx_inherent = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
+                    apply_pbc(dx_inherent);
+                    dr_inherent += dx_inherent*dx_inherent;
+                }
+                dr_inherent = sqrt(dr_inherent);
+
+                for (int c=1; c<NCG; c++) {
+                    double L = c;
+                    L/=2.0;
+                    double w_inherent = exp(-dr_inherent/L);
+                    for (int type=0; type<NTYPE; type++) {
+                        if (type==type_data[j+s*N]) {
+                            mean_den_inherent[type*NCG+c] += w_inherent;
+
+                            double diff = (struct_local_filion[NTYPE*NCG][j+s*N]-struct_local_filion[NTYPE*NCG+type*NCG+c][i+s*N]);
+                            mean_rest[type*NCG+c] += w_inherent*diff*diff;
+                        }
+                    }
+                }
+            }
+
+            for (int type=0; type<NTYPE; type++) {
+                struct_local_filion[5*NTYPE*NCG+type*NCG][i+s*N] = 0.0;
+
+            }
+            for (int c=1; c<NCG; c++) {
+                for (int type=0; type<NTYPE; type++) {
+                    struct_local_filion[5*NTYPE*NCG+type*NCG+c][i+s*N] = mean_rest[type*NCG+c]/mean_den_inherent[type*NCG+c];
+                }
+            }
+        }
+    }
+
     // normalize physical structural descriptors to have mean zero and unit variance
     double ** struct_local_norm; 
-    struct_local_norm = dmatrix(0,N*NS-1,0,2*NCG-1);
-    for (int k=0; k<2*NCG;k++) {
-        double mean = 0.0;
-        double var = 0.0;
-        for (int i=0; i<N*NS;i++) {
-            mean += struct_local_filion[k][i];
-            var += struct_local_filion[k][i]*struct_local_filion[k][i];
+    struct_local_norm = dmatrix(0,N*NS-1,0,19*NCG-1);
+    for (int k=0; k<6*NTYPE*NCG;k++) {
+
+        double mean[NTYPE];
+        double var[NTYPE];
+        for (int type=0; type<NTYPE; type++) {
+            mean[type] = 0.0;
+            var[type] = 0.0;
         }
-        mean/=N*NS;
-        var=sqrt(var/(N*NS)- mean*mean);
+        //std::cout << k << std::endl;
+        for (int i=0; i<N*NS;i++) {
+            //if (k==0 && i<1000) std::cout << struct_filion_classifiers[i][k] << std::endl;
+            int type = type_data[i];
+            mean[type] += struct_local_filion[k][i];
+            var[type] += struct_local_filion[k][i]*struct_local_filion[k][i];
+        }
+
+        for (int type=0; type<NTYPE; type++) {
+            mean[type]/=NPerType[type]*NS;
+            var[type]=sqrt(var[type]/(NPerType[type]*NS)- mean[type]*mean[type]);
+            struct_mean_var[NTot*(CG_NMAX+1)+k][2*type] = mean[type];
+            struct_mean_var[NTot*(CG_NMAX+1)+k][2*type+1] = var[type];
+        }
 
         for (int i=0; i<N*NS;i++) {
-            struct_local_norm[i][k] = struct_local_filion[k][i] - mean;
-            if (var > 0.00000001) struct_local_norm[i][k] /= var;
+            struct_local_norm[i][k] = struct_local_filion[k][i];
+            //struct_local_norm[i][k] = struct_local_filion[k][i] - mean;
+            //if (var > 0.00000001) struct_local_norm[i][k] /= var;
             //if (i<5 && k==NCG) std::cout << struct_local_norm[i][NCG] << std::endl;
         }
     }
@@ -478,24 +632,103 @@ void write_descriptors_csv_phys(){
         outfilePred2.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred2(&outfilePred2);
         //write header
-        for (int c=0; c<NCG; c++) outPred2 << "DEN_CGP" << c << ",";
-        for (int c=0; c<NCG; c++) outPred2 << "EPOT_CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "DEN_CGP_TYPE0" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "DEN_CGP_TYPE1" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "DEN_CGP_TYPE2" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "EPOT_CGP_TYPE0" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "EPOT_CGP_TYPE1" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "EPOT_CGP_TYPE2" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP_TYPE0" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP_TYPE1" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP_TYPE2" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "AREA_CGP_TYPE0" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "AREA_CGP_TYPE1" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "AREA_CGP_TYPE2" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "ASY_CGP_TYPE0" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "ASY_CGP_TYPE1" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "ASY_CGP_TYPE2" << c << ",";
+
+
+        for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE0" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE1" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE2" << c << ",";
+        /*for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "PERI_VAR2CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "PERI_VAR4CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "AREA_CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "AREA_VAR2CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "AREA_VAR4CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "ASY_CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "ASY_VAR2CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "ASY_VAR4CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "CENTROID_CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "CENTROID_VAR2CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "CENTROID_VAR4CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "NEIGH_CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "NEIGH_VAR2CGP" << c << ",";
+        for (int c=0; c<NCG; c++) outPred2 << "NEIGH_VAR4CGP" << c << ",";*/
         outPred2 << "\n";
+
         // write body
+
+        // length scale
+        for (int k=0; k<6*NTYPE*NCG; k++) {
+            outPred2 << (k % NCG)/2.0 << ",";
+        }
+        outPred2 << "\n";
+        // mean and variance
+        for (int k=0; k<6*NTYPE*NCG; k++) {
+            outPred2 << struct_mean_var[NTot*(CG_NMAX+1)+k][2*type] << ",";
+        }
+        outPred2 << "\n";
+        for (int k=0; k<6*NTYPE*NCG; k++) {
+            outPred2 << struct_mean_var[NTot*(CG_NMAX+1)+k][2*type+1] << ",";
+        }
+        outPred2 << "\n";
+
+        // particle data
         for (int i=0; i<N*NS; i++) {
             if (type_data[i] == type) {
-                for (int k=0; k<2*NCG; k++) outPred2 << struct_local_norm[i][k] << ",";
+                for (int k=0; k<6*NTYPE*NCG; k++) outPred2 << struct_local_norm[i][k] << ",";
                 outPred2 << "\n";
             }
         }
         outfilePred2.close();
     }
     
-    free_dmatrix(struct_local_norm,0,N*NS-1,0,NStructTotal*NCG-1);
+    free_dmatrix(struct_local_norm,0,N*NS-1,0,19*NCG-1);
     
 }
 
 void write_descriptors_csv_dyn(){
+
+    // normalize physical structural descriptors to have mean zero and unit variance
+    double ** dyn_mean_var; 
+    dyn_mean_var = dmatrix(0,(NT+1)*NDynTotal-1,0,2*NTYPE-1);
+    for (int k=0; k<(NT+1)*NDynTotal;k++) {
+
+        double mean[NTYPE];
+        double var[NTYPE];
+        for (int type=0; type<NTYPE; type++) {
+            mean[type] = 0.0;
+            var[type] = 0.0;
+        }
+        //std::cout << k << std::endl;
+        for (int i=0; i<N*NS;i++) {
+            //if (k==0 && i<1000) std::cout << struct_filion_classifiers[i][k] << std::endl;
+            int type = type_data[i];
+            if ( (k % (NT + 1) ) == NT && dyn_avg_save[i][k] > 0.000001 ) dyn_avg_save[i][k] = log10(dyn_avg_save[i][k]);
+            mean[type] += dyn_avg_save[i][k];
+            var[type] += dyn_avg_save[i][k]*dyn_avg_save[i][k];
+        }
+
+        for (int type=0; type<NTYPE; type++) {
+            mean[type]/=NPerType[type]*NS;
+            var[type]=sqrt(var[type]/(NPerType[type]*NS)- mean[type]*mean[type]);
+            dyn_mean_var[k][2*type] = mean[type];
+            dyn_mean_var[k][2*type+1] = var[type];
+        }
+    }
 
     for (int type=0; type<NTYPE; type++) {
         QString pathOrig = QString::fromStdString(folderOut);
@@ -506,13 +739,29 @@ void write_descriptors_csv_dyn(){
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred(&outfilePred);
         //write header
-        for (int k=0; k<NDynTotal; k++) for (int t=1; t<NT; t++) outPred << QString::fromStdString(DynNames[k]) << t << ",";
+        for (int k=0; k<NDynTotal; k++) for (int t=1; t<=NT; t++) outPred << QString::fromStdString(DynNames[k]) << t << ",";
         outPred << "\n";
+
+        // mean and variance
+        for (int k=0; k<(NT+1)*NDynTotal; k++) {
+            if ((k % (NT + 1) ) != 0) outPred << dyn_mean_var[k][2*type] << ",";
+        }
+        outPred<< "\n";
+        for (int k=0; k<(NT+1)*NDynTotal; k++) {
+            if ((k % (NT + 1) ) != 0) outPred << dyn_mean_var[k][2*type+1] << ",";
+        }
+        outPred << "\n";
+
         // write body
         for (int i=0; i<N*NS; i++) {
             if (type_data[i] == type) {
-                for (int k=0; k<NDynTotal; k++) for (int t=1; t<NT; t++) outPred << dyn_avg_save[i][k*NT+t] << ",";
+                for (int k=0; k<NDynTotal; k++) {
+                    for (int t=1; t<=NT; t++) {
+                        outPred << dyn_avg_save[i][k*(NT+1)+t] << ",";
+                    }
+                }
                 outPred << "\n";
+
             }
         }
         outfilePred.close();

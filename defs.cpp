@@ -56,6 +56,12 @@ int struct_filion_flag=-1;
 std::string struct_filion_file;
 double ** struct_filion_descriptor_list;
 
+int struct_ml_flag=-1;
+
+int struct_gnn_flag=-1;
+
+int struct_voronoi_flag=-1;
+
 int struct_read_flag=-1;
 int struct_read_Ntotal=0;
 std::string struct_read_file;
@@ -84,6 +90,7 @@ double * dyn_sys_avg;
 double *dyn_avg2;
 double **dyn_pred;
 double ** dyn_avg_save;
+double ** dyn_avg_save_cg;
 
 //STRUCT
 double **struct_local;
@@ -93,6 +100,7 @@ double **struct_base_gr;
 double **struct_local_filion;
 double **struct_filion_classifiers_thermal;
 double **struct_filion_classifiers_inherent;
+double ** struct_mean_var; 
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 double **dyn_ranges;
@@ -124,14 +132,15 @@ void allocate_storage(){
     dyn_sys_avg = dvector(0,NS*NI*NTYPE-1);
     dyn_avg2 = dvector(0,N*NS-1);
     if (NDynTotal>0) dyn_pred = dmatrix(0,NT*NDynTotal-1,0,6*NTYPE-1);
-    dyn_avg_save = dmatrix(0,N*NS-1,0,NDynTotal*NT-1);
+    if (NDynTotal>0) dyn_avg_save = dmatrix(0,N*NS-1,0,NDynTotal*(NT+1)-1);
+    if (NDynTotal>0) dyn_avg_save_cg = dmatrix(0,N*NS-1,0,NDynTotal*(NT+1)*5-1);
 
     // allocate struct data
     if (NStructTotal>0) struct_local = dmatrix(0,NStructTotal*NCG-1,0,N*NS-1);
-    if (struct_filion_flag>=0) struct_local_filion = dmatrix(0,2*NCG-1,0,N*NS-1);
+    if (struct_filion_flag>=0) struct_local_filion = dmatrix(0,19*NCG-1,0,N*NS-1);
 
     struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
-    if(struct_soft_modes_flag>=0 || rp_flag==0) hessian = dmatrix(0,N*N-1,0,dim*dim-1);
+    if(struct_soft_modes_flag>=0 || rp_flag>=0) hessian = dmatrix(0,N*N-1,0,dim*dim-1);
     if(struct_soft_modes_flag>=0) {
         hessian_evectors = dmatrix(0,N*dim-1,0,N*dim-1);
         hessian_evalues = dvector(0,NS*N*dim-1);

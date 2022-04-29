@@ -15,6 +15,6 @@ void apply_pbc_global(){
 }
 
 void apply_pbc(double &x){
-    while (x < boxL/2.0) x += boxL; 
+    while (x < -boxL/2.0) x += boxL; 
     while (x > boxL/2.0) x -= boxL; 
 }

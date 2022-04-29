@@ -23,36 +23,37 @@ void eval_struct_soft_modes(){
         }
 
         // test harmonic
-        /*int s=0;
-        int i=1;
-        int j=2;
-        int d1=0;
-        int d2=1;
-        double shift = 0.00;
-        double delta = 0.000001;
-        xyz_inherent_data[i+s*N][d1] -= shift;
-        xyz_inherent_data[i+s*N][d1] -= delta;
-        double epot_im1 = calc_epot_tot(s);
-        xyz_inherent_data[i+s*N][d1] += 2.0*delta;
-        double epot_ip1 = calc_epot_tot(s);
-        xyz_inherent_data[i+s*N][d1] -= delta;
-        xyz_inherent_data[i+s*N][d1] += shift;
+        /*if (s==0) {
+            int i=1;
+            int j=2;
+            int d1=0;
+            int d2=1;
+            double shift = 0.00;
+            double delta = 0.000001;
+            xyz_inherent_data[i+s*N][d1] -= shift;
+            xyz_inherent_data[i+s*N][d1] -= delta;
+            double epot_im1 = calc_epot_tot(s);
+            xyz_inherent_data[i+s*N][d1] += 2.0*delta;
+            double epot_ip1 = calc_epot_tot(s);
+            xyz_inherent_data[i+s*N][d1] -= delta;
+            xyz_inherent_data[i+s*N][d1] += shift;
 
-        //std::cout << epot_ip1 << " " << epot_im1 << " " <<  0.5/delta*(epot_ip1-epot_im1) << std::endl;
+            std::cout << epot_ip1 << " " << epot_im1 << " " <<  0.5/delta*(epot_ip1-epot_im1) << std::endl;
 
-        // test hessian
-        xyz_inherent_data[i+s*N][d1] -= delta;
-        xyz_inherent_data[j+s*N][d2] -= delta;
-        double epot_im1_jm1 = calc_epot_tot(s);
-        xyz_inherent_data[i+s*N][d1] += 2.0*delta;
-        double epot_ip1_jm1 = calc_epot_tot(s);
-        xyz_inherent_data[j+s*N][d2] += 2.0*delta;
-        double epot_ip1_jp1 = calc_epot_tot(s);
-        xyz_inherent_data[i+s*N][d1] -= 2.0*delta;
-        double epot_im1_jp1 = calc_epot_tot(s);
-        xyz_inherent_data[i+s*N][d1] += delta;
-        xyz_inherent_data[j+s*N][d2] -= delta;
-        std::cout << hessian[s*N*N+i*N+j][d1*dim+d2] << " " << 0.25/delta/delta*(epot_ip1_jp1-epot_im1_jp1-epot_ip1_jm1+epot_im1_jm1) << std::endl;*/
+            // test hessian
+            xyz_inherent_data[i+s*N][d1] -= delta;
+            xyz_inherent_data[j+s*N][d2] -= delta;
+            double epot_im1_jm1 = calc_epot_tot(s);
+            xyz_inherent_data[i+s*N][d1] += 2.0*delta;
+            double epot_ip1_jm1 = calc_epot_tot(s);
+            xyz_inherent_data[j+s*N][d2] += 2.0*delta;
+            double epot_ip1_jp1 = calc_epot_tot(s);
+            xyz_inherent_data[i+s*N][d1] -= 2.0*delta;
+            double epot_im1_jp1 = calc_epot_tot(s);
+            xyz_inherent_data[i+s*N][d1] += delta;
+            xyz_inherent_data[j+s*N][d2] -= delta;
+            std::cout << hessian[s*N*N+i*N+j][d1*dim+d2] << " " << 0.25/delta/delta*(epot_ip1_jp1-epot_im1_jp1-epot_ip1_jm1+epot_im1_jm1) << std::endl;
+        }*/
 
         if (modeSM==0) { // EigenDecomposition needs to be calculated
 
@@ -90,6 +91,7 @@ void eval_struct_soft_modes(){
                     ev(i).real(100.0);
                 }
                 save_struct[i] = ev(i).real(); 
+                std::cout << ev(i).real() << std::endl;
             }
             std::sort(save_struct, save_struct+dim*N); // sorting the array 
             std::map<double, int> rank_struct; 
@@ -107,6 +109,8 @@ void eval_struct_soft_modes(){
                         hessian_evectors[ind][i] = vT[i].real();
                     }
                 }
+
+                //std::cout << ev[k].real()  <<  std::endl;
             }
             // low level sanity checks
             /*for (int k=0; k<N*dim-dim;k++) { 
@@ -271,7 +275,6 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
         int s = (i - i % N)/N;
         //std::cout << "s " << s << std::endl;
         for (int k=0; k<N;k++) { // loop over particle pairs
-            int kType = type_data[k+s*N];
             double dr = 0.0;
             for (int d=0; d<dim;d++) {
                 dx[d] = xyz_inherent_data[i][d+t*dim+dim*NT*iso] - xyz_inherent_data[k+s*N][d+t*dim+dim*NT*iso];
@@ -279,32 +282,32 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
                 dr += dx[d]*dx[d];
             }
             double sigma = determine_sigma(i, k+s*N);
+            double sigma2= sigma*sigma;
 
-            if(model=="KA2" || model=="KA2-2D") {
-                if (dr < RC2LJ*sigma && i!=k+s*N ) {
+            if(model=="KA2" || model=="KA2-2D" || model=="KA") {
+                if (dr < RC2LJ*sigma2 && i!=k+s*N ) {
                     //std::cout << i << " " << k << std::endl;
+                    int kType = type_data[k+s*N];
                     double epsilon = determine_epsilon(iType, kType);
                     double rij2i =  1.0/dr;
-                    double sigma2= sigma*sigma;
                     double rij6i = sigma2*sigma2*sigma2*rij2i*rij2i*rij2i;
                     double rij12i = rij6i*rij6i;
                     double c2 = C2LJ / (sigma2);
                     double c4 = C4LJ / (sigma2*sigma2);
+                    double E = 4.0 * epsilon * (8.0*c4 + 168.0*rij12i*rij2i*rij2i - 48.0*rij6i*rij2i*rij2i);
+                    double F = 4.0 * epsilon * (2.0*c2 + 4.0*c4*dr - 12.0*rij12i*rij2i + 6.0*rij6i*rij2i);
                     for (int d1=0; d1<dim;d1++) {
-                        for (int d2=0; d2<dim;d2++) {
-                            if (d1==d2) result_loc[d1*dim+d2] = 2.0*c2 + 8.0*c4*dx[d1]*dx[d1] + 4.0*c4*dr + 168.0*dx[d1]*dx[d1]*rij12i*rij2i*rij2i - 12.0*rij12i*rij2i - 48.0*dx[d1]*dx[d1]*rij6i*rij2i*rij2i + 6.0*rij6i*rij2i;
-                            else {
-                                if (d1 > d2) result_loc[d1*dim+d2] = result_loc[d2*dim+d1];
-                                else result_loc[d1*dim+d2] = 8.0*c4*dx[d1]*dx[d2] + 168.0*dx[d1]*dx[d2]*rij12i*rij2i*rij2i - 48.0*dx[d1]*dx[d2]*rij6i*rij2i*rij2i;
-                            }
-                            result[d1*dim+d2] += 4.0*epsilon*result_loc[d1*dim+d2];
+                        for (int d2=0; d2<=d1;d2++) {
+                            if (d1==d2) result[d1*dim+d2] += E*dx[d1]*dx[d1] + F;
+                            else result[d1*dim+d2] += E*dx[d1]*dx[d2];
                         }
                     }
                 }
             }
             if(model=="POLY") {
-                if (dr < RC2POLY*sigma && i!=k+s*N ) {
+                if (dr < RC2POLY*sigma2 && i!=k+s*N ) {
                     //std::cout << i << " " << k << std::endl;
+                    int kType = type_data[k+s*N];
                     double epsilon = determine_epsilon(iType, kType);
                     double rij2i =  1.0/dr;
                     double sigma2= sigma*sigma;
@@ -312,17 +315,21 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
                     double rij12i = rij6i*rij6i;
                     double c2 = C2POLY / (sigma2);
                     double c4 = C4POLY / (sigma2*sigma2);
+                    double E = 4.0 * epsilon * (8.0*c4 + 168.0*rij12i*rij2i*rij2i);
+                    double F = 4.0 * epsilon * (2.0*c2 + 4.0*c4*dr - 12.0*rij12i*rij2i);
                     for (int d1=0; d1<dim;d1++) {
-                        for (int d2=0; d2<dim;d2++) {
-                            if (d1==d2) result_loc[d1*dim+d2] = 2.0*c2 + 8.0*c4*dx[d1]*dx[d1] + 4.0*c4*dr + 168.0*dx[d1]*dx[d1]*rij12i*rij2i*rij2i - 12.0*rij12i*rij2i;
-                            else {
-                                if (d1 > d2) result_loc[d1*dim+d2] = result_loc[d2*dim+d1];
-                                else result_loc[d1*dim+d2] = 8.0*c4*dx[d1]*dx[d2] + 168.0*dx[d1]*dx[d2]*rij12i*rij2i*rij2i;
-                            }
-                            result[d1*dim+d2] += 4.0*epsilon*result_loc[d1*dim+d2];
+                        for (int d2=0; d2<=d1;d2++) {
+                            if (d1==d2) result[d1*dim+d2] += E*dx[d1]*dx[d1] + F;
+                            else result[d1*dim+d2] += E*dx[d1]*dx[d2];
                         }
                     }
                 }
+            }
+        }
+
+        for (int d1=0; d1<dim-1;d1++) {
+            for (int d2=d1+1; d2<dim;d2++) {
+                result[d1*dim+d2] = result[d2*dim+d1];
             }
         }
 
@@ -341,29 +348,30 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
             apply_pbc(dx[d]);
             dr += dx[d]*dx[d];
         }
+        double sigma2= sigma*sigma;
 
-        if(model=="KA2" || model=="KA2-2D") {
-            if (dr < RC2LJ*sigma ) {
+        if(model=="KA2" || model=="KA2-2D" || model=="KA") {
+            if (dr < RC2LJ*sigma2 ) {
                 double rij2i =  1.0/dr;
-                double sigma2= sigma*sigma;
                 double rij6i = sigma2*sigma2*sigma2*rij2i*rij2i*rij2i;
                 double rij12i = rij6i*rij6i;
                 double c2 = C2LJ / (sigma2);
                 double c4 = C4LJ / (sigma2*sigma2);
+                double E = -4.0 * epsilon * (8.0*c4 + 168.0*rij12i*rij2i*rij2i - 48.0*rij6i*rij2i*rij2i);
+                double F = -4.0 * epsilon * (2.0*c2 + 4.0*c4*dr - 12.0*rij12i*rij2i + 6.0*rij6i*rij2i);
                 for (int d1=0; d1<dim;d1++) {
                     for (int d2=0; d2<dim;d2++) {
-                        if (d1==d2) result_loc[d1*dim+d2] = 2.0*c2 + 8.0*c4*dx[d1]*dx[d1] + 4.0*c4*dr + 168.0*dx[d1]*dx[d1]*rij12i*rij2i*rij2i - 12.0*rij12i*rij2i - 48.0*dx[d1]*dx[d1]*rij6i*rij2i*rij2i + 6.0*rij6i*rij2i;
+                        if (d1==d2) result[d1*dim+d2] = E*dx[d1]*dx[d1] + F;
                         else {
-                            if (d1 > d2) result_loc[d1*dim+d2] = result_loc[d2*dim+d1];
-                            else result_loc[d1*dim+d2] = 8.0*c4*dx[d1]*dx[d2] + 168.0*dx[d1]*dx[d2]*rij12i*rij2i*rij2i - 48.0*dx[d1]*dx[d2]*rij6i*rij2i*rij2i;
+                            if (d1 > d2) result[d1*dim+d2] = result[d2*dim+d1];
+                            else result[d1*dim+d2] = E*dx[d1]*dx[d2];
                         }
-                        result[d1*dim+d2] = - 4.0*epsilon*result_loc[d1*dim+d2];
                     }
                 }
             } 
         }
         if(model=="POLY") {
-            if (dr < RC2POLY*sigma) {
+            if (dr < RC2POLY*sigma2) {
                 double result_loc[dim*dim];
                 double rij2i =  1.0/dr;
                 double sigma2= sigma*sigma;
@@ -371,14 +379,15 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
                 double rij12i = rij6i*rij6i;
                 double c2 = C2POLY / (sigma2);
                 double c4 = C4POLY / (sigma2*sigma2);
+                double E = 4.0 * epsilon * (8.0*c4 + 168.0*rij12i*rij2i*rij2i);
+                double F = 4.0 * epsilon * (2.0*c2 + 4.0*c4*dr - 12.0*rij12i*rij2i);
                 for (int d1=0; d1<dim;d1++) {
                     for (int d2=0; d2<dim;d2++) {
-                        if (d1==d2) result_loc[d1*dim+d2] = 2.0*c2 + 8.0*c4*dx[d1]*dx[d1] + 4.0*c4*dr + 168.0*dx[d1]*dx[d1]*rij12i*rij2i*rij2i - 12.0*rij12i*rij2i;
+                        if (d1==d2) result[d1*dim+d2] = E*dx[d1]*dx[d1] + F;
                         else {
-                            if (d1 > d2) result_loc[d1*dim+d2] = result_loc[d2*dim+d1];
-                            else result_loc[d1*dim+d2] = 8.0*c4*dx[d1]*dx[d2] + 168.0*dx[d1]*dx[d2]*rij12i*rij2i*rij2i;
+                            if (d1 > d2) result[d1*dim+d2] = result[d2*dim+d1];
+                            else result[d1*dim+d2] = E*dx[d1]*dx[d2];
                         }
-                        result[d1*dim+d2] = - 4.0*epsilon*result_loc[d1*dim+d2];
                     }
                 }
             } 

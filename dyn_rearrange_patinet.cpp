@@ -140,7 +140,7 @@ void eval_rp(){
     }
 
     // write results
-    print_traj(save_pat_traj);
+    print_traj(save_pat_traj,flag);
     print_isoconf(flag);
     print_isoconf(flag+1);
     print_isoconf(flag+2);

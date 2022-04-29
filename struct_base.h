@@ -18,6 +18,7 @@ void eval_struct_base();
 void rescale_print_gr();
 void calc_psi(int ** neighbors);
 void eval_den_cg();
+void write_descriptors_csv_phys();
 
 // help function
 double determine_sigma(int i, int j);

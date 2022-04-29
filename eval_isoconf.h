@@ -8,6 +8,7 @@ void add_histogram_avg(int s, int i, int j,double* hist_cut, double val);
 void norm_histogram();
 
 void eval_isoconf(int t, int flag);
+void eval_timescale(int flag, double threshold);
 
 void calc_histograms_dynamics(int t, int flag);
 void eval_information_theory_dynamics(int t);
@@ -17,6 +18,6 @@ void eval_information_theory_correlation(int t,int loc_struct,int c);
 void eval_pearson_spearman_correlation(int t,double * struct_array,int loc_struct,int flag, int c);
 
 void print_isoconf(int flag);
-void print_traj(double * save_dyn);
+void print_traj(double * save_dyn,int flag);
 
 #endif

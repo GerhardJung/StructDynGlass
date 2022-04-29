@@ -34,7 +34,7 @@ void read_files_lammps(){
     }
     infile.close();
     NT = Nloc/(9 + N);
-    if (NDynTotal==0) NT=1;
+    if (NDynTotal==0 && (struct_gnn_flag<0)) NT=1;
 
     std::cout << "Simulation settings:" << std::endl;
     std::cout << "N/dim/boxL/NT: " << N << " " << dim << " " << boxL << " " << NT << std::endl;
@@ -144,7 +144,7 @@ void print_xyz_isoconf(){
         QFile outfilePred(pathPred);   // input file with xyz
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred(&outfilePred);
-        for (int t=1; t<NT; t++) {
+        for (int t=1; t<=NT; t++) {
             outPred << N << "\n";
             outPred << "Properties=species:I:1:pos:R:" << dim;
             for (int k=0; k<NStructTotal; k++) {
@@ -152,7 +152,8 @@ void print_xyz_isoconf(){
                 else outPred << ":" << QString::fromStdString(StructNames[k]) << ":R:1";
             }
             for (int k=0; k<NDynTotal; k++) outPred << ":" << QString::fromStdString(DynNames[k]) << ":R:1";
-            outPred << " time " << time_data[t]*timestep << "\n";
+            if (t<NT) outPred << " time " << time_data[t]*timestep << "\n";
+            else outPred << " timescale\n";
             for (int i = 0; i < N; i++) {
                 if (dim == 2) {
                     outPred << type_data[i+s*N]+1 << " " << xyz_inherent_data[i+s*N][0] << " " << xyz_inherent_data[i+s*N][1] << " ";
@@ -163,7 +164,14 @@ void print_xyz_isoconf(){
                     if (k<struct_read_flag || k>=struct_read_flag+struct_read_Ntotal) for (int c=0; c<NCG; c++) outPred << struct_local[k*NCG+c][i+s*N] << " ";
                     else outPred << struct_local[k*NCG][i+s*N] << " ";
                 }
-                for (int k=0; k<NDynTotal; k++) outPred << dyn_avg_save[i+s*N][k*NT+t] << " ";
+                for (int k=0; k<NDynTotal; k++) {
+                    if (t<NT) outPred << dyn_avg_save[i+s*N][k*(NT+1)+t] << " ";
+                    else {
+                        if (dyn_avg_save[i+s*N][k*(NT+1)+t] > 0) outPred << log10(dyn_avg_save[i+s*N][k*(NT+1)+t]) << " ";
+                        else outPred << 0.0 << " ";
+                    } 
+
+                }
                 outPred << "\n";
             }
         }
@@ -187,7 +195,7 @@ void print_xyz_isoconf(){
         for (int i = 0; i < N*NS; i++) {
             outPred1 << type_data[i] << " ";
             for (int t=1; t<NT; t++) {
-                outPred1 << dyn_avg_save[i][(rp_flag+1)*NT+t] << " ";
+                outPred1 << dyn_avg_save[i][(rp_flag+1)*(NT+1)+t] << " ";
             }
             outPred1 << "\n";
         }

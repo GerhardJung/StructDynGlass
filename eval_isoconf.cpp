@@ -1,6 +1,7 @@
  
 #include "eval_isoconf.h"
 #include "global.h"
+#include "pbc.h"
 #include <bits/stdc++.h> 
 
 using namespace std;
@@ -103,7 +104,7 @@ void eval_isoconf(int t, int flag){
             //std::cout << "AVG direct " << dyn_avg[i] << " AVG indirect " << Ciso_loc << " AVG2 direct " << dyn_avg2[i] << " AVG2 indirect " << C2iso_loc << std::endl;
 
             // Write into isoconfig storage
-            dyn_avg_save[i+s*N][flag*NT+t] = dyn_avg[i+s*N];
+            dyn_avg_save[i+s*N][flag*(NT+1)+t] = dyn_avg[i+s*N];
             //if(i+s*N<5) cout <<dyn_avg[i+s*N] << std::endl;
 
             // calculate delta and Delta
@@ -113,6 +114,50 @@ void eval_isoconf(int t, int flag){
             Delta[type_data[i+s*N]*NS+s] += dyn_avg2[i+s*N];
         }
     }
+
+    // calc coarse-grained structural descriptors
+    int NCG_Dyn=5;
+    double mean_den_inherent[NCG_Dyn];
+    double mean_rest[NCG_Dyn];
+    double Ciso_cg[NTYPE*NCG_Dyn*NS], delta_cg[NTYPE*NCG_Dyn*NS], Delta_cg[NTYPE*NCG_Dyn*NS];
+    for (int type=0; type<NTYPE*NCG_Dyn*NS; type++) {
+        Ciso_cg[type] = 0.0;
+        delta_cg[type] = 0.0;
+        Delta_cg[type] = 0.0;
+    }
+    // cg to be done on the level of the trajectories themselves
+    /*for (int s=0; s<NS;s++) { // loop over structures
+        for (int i=0; i<N;i++) { // loop over particles
+
+            for (int c=0; c<NCG_Dyn; c++) {
+                mean_den_inherent[c] = 0.0;
+                mean_rest[c] = 0.0;   
+            }
+            //double mean=0.0;
+            for (int j=0; j<N;j++) { // loop over particle pairs
+                double dr = 0.0, dx;
+                for (int d=0; d<dim;d++) {
+                    dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
+                    apply_pbc(dx);
+                    dr += dx*dx;
+                }
+                dr = sqrt(dr);
+
+                for (int c=1; c<NCG_Dyn; c++) {
+                    double L = c;
+                    double w_inherent = exp(-dr/L);
+                    mean_den_inherent[c] += w_inherent;
+                    mean_rest[c] += w_inherent*dyn_avg_save[j+s*N][flag*(NT+1)+t];
+                }
+            }
+
+            for (int c=1; c<NCG; c++) {
+                dyn_avg_save_cg[i+s*N][(flag*(NT+1)+t)*NCG_Dyn+c] = mean_rest[c]/mean_den_inherent[c];
+            }
+
+            
+        }
+    }*/
 
     for (int type=0; type<NTYPE; type++) {
         for (int s = 0; s < NS; s++) {
@@ -386,6 +431,65 @@ void eval_pearson_spearman_correlation(int t,double * struct_array,int loc_struc
     for (int type=0; type<NTYPE; type++) {
         dyn_struct_pred[loc_struct*NCG+c+t*NCG*NStructTotal+NCG*NStructTotal*NT*flag][type+NTYPE]= cov[type]/sqrt(var_dyn[type]*var_struct[type]);
     }
+}
+
+
+// calculate reaarangement timescale from isoconf average
+void eval_timescale(int flag, double threshold){
+
+    for (int i = 0; i < NS*N; i++) {
+        dyn_avg_save[i][flag*(NT+1)+NT] = 0.0;
+
+        for (int t=1; t<NT; t++) {
+            //cout << t << " " <<  dyn_avg_save[i][flag*(NT+1)+t] << std::endl;
+            if(dyn_avg_save[i][flag*(NT+1)+t] < threshold && dyn_avg_save[i][flag*(NT+1)+NT] == 0.0) {
+                dyn_avg_save[i][flag*(NT+1)+NT] = time_data[t-1]*timestep - (dyn_avg_save[i][flag*(NT+1)+t-1] - threshold)*(time_data[t-1]*timestep-time_data[t]*timestep)/(dyn_avg_save[i][flag*(NT+1)+t-1]-dyn_avg_save[i][flag*(NT+1)+t]);
+                //cout << t << " " <<  time_data[t-1]*timestep << " "  << time_data[t]*timestep << " " << dyn_avg_save[i][flag*(NT+1)+NT] << std::endl;
+                break;
+            }
+        }
+    }
+
+    // several particles will have a time scale larger than the largest simulated time scale
+    // solution: average over all particles with the longest timescales which were still recorded ( NT - 2 < t < NT -1 )
+    // -> this gives a master curve which can be used to extrapolate by time-temperature superposition the very slow particles
+    double dyn_avg_super[NT];
+    for (int t=1; t<NT; t++) {
+        dyn_avg_super[t] = 0.0;
+    }
+    int count=0;
+    int tmax = NT-1;
+    //cout << time_data[NT-2] << " " << time_data[NT-1] << " " << tmax << " " << NT << std::endl;
+    for (int i = 0; i < NS*N; i++) {
+        if (dyn_avg_save[i][flag*(NT+1)+NT] > 0.95*time_data[tmax]*timestep ) {
+            count++;
+            for (int t=1; t<NT; t++) {
+                dyn_avg_super[t] += dyn_avg_save[i][flag*(NT+1)+t];
+            }
+        }
+    }
+    for (int t=1; t<NT; t++) {
+        dyn_avg_super[t] /= (double) count;
+        //cout << t << " " << time_data[t]*timestep << " "<< dyn_avg_super[t] << std::endl;
+    }
+
+    for (int i = 0; i < NS*N; i++) {
+        // find time scale for all remaining particles
+        if (dyn_avg_save[i][flag*(NT+1)+NT] < 0.0001) {
+            double val = dyn_avg_save[i][flag*(NT+1)+NT-1];
+            if (val > 0.98) val = 0.98;  //introduce cutoff to avoid articifically long tails
+            for (int t=1; t<NT; t++) {
+                if(val > dyn_avg_super[t]) {
+                    dyn_avg_save[i][flag*(NT+1)+NT] = time_data[t-1]*timestep - (dyn_avg_super[t-1] - val)*(time_data[t-1]*timestep-time_data[t]*timestep)/(dyn_avg_super[t-1]-dyn_avg_super[t]);
+                    //cout << t << " " <<  time_data[t-1]*timestep << " "  << time_data[t]*timestep << " " << dyn_avg_save[i][flag*(NT+1)+NT] << std::endl;
+                    break;
+                }
+            }
+            dyn_avg_save[i][flag*(NT+1)+NT] = time_data[NT-1]*timestep*time_data[NT-1]*timestep/dyn_avg_save[i][flag*(NT+1)+NT];
+            
+            //cout << dyn_avg_save[i][flag*(NT+1)+NT] << " " << val << std::endl; 
+        }
+    }
 
 }
 
@@ -462,7 +566,7 @@ void print_isoconf(int flag){
 
 }
 
-void print_traj(double * save_dyn){
+void print_traj(double * save_dyn, int flag){
 
     QString pathOrig = QString::fromStdString(folderOut);
 
@@ -479,7 +583,7 @@ void print_traj(double * save_dyn){
         for (int t=0; t<NT; t++) {
             outPred << N << "\n";
             outPred << "Properties=species:I:1:pos:R:" << dim;
-            outPred << ":LOG(FRES):R:1";
+            outPred << ":LOG(FRES)/BB:R:1";
             outPred << " time " << time_data[t]*timestep << "\n";
             for (int i = 0; i < N; i++) {
                 if (dim == 2) {
@@ -487,7 +591,7 @@ void print_traj(double * save_dyn){
                 } else {
                     outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*dim+dim*NT*j] << " " << xyz_inherent_data[i][1+t*dim+dim*NT*j] << " " << xyz_inherent_data[i][2+t*dim+dim*NT*j] << " ";
                 }
-                outPred << save_pat_traj[t*N*NI+j*N+i] << " ";
+                outPred << save_dyn[t*N*NI+j*N+i] << " ";
                 outPred << "\n";
             }
         }
