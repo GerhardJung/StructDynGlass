@@ -15,7 +15,7 @@
 #include "nrutil.h"
 #include "read_write_lammps.h"
 
-#define NCG 16
+#define NCG 14
 
 #define EPS 0.000000001
 
@@ -118,7 +118,7 @@ extern double **struct_base_gr;
 
 extern double **struct_filion_classifiers_thermal;
 extern double **struct_filion_classifiers_inherent;
-extern double **struct_local_filion;
+extern double **struct_local_ml;
 extern double ** struct_mean_var; 
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS

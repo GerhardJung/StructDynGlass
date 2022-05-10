@@ -1,5 +1,5 @@
 #include "struct_gnn.h"
-#include "struct_filion.h"
+#include "struct_ml.h"
 #include "struct_base.h"
 #include "dyn_bb.h"
 #include "defs.h"
@@ -25,7 +25,7 @@ void eval_struct_gnn(){
     // normalize physical structural descriptors to have mean zero and unit variance
     double ** struct_local_norm; 
     struct_local_norm = dmatrix(0,N*NS-1,0,5*NTYPE*NCG-1);
-    for (int k=0; k<5*NTYPE*NCG;k++) {
+    for (int k=0; k<4*NTYPE*NCG;k++) {
 
         double mean[NTYPE];
         double var[NTYPE];
@@ -37,8 +37,8 @@ void eval_struct_gnn(){
         for (int i=0; i<N*NS;i++) {
             //if (k==0 && i<1000) std::cout << struct_filion_classifiers[i][k] << std::endl;
             int type = type_data[i];
-            mean[type] += struct_local_filion[k][i];
-            var[type] += struct_local_filion[k][i]*struct_local_filion[k][i];
+            mean[type] += struct_local_ml[k][i];
+            var[type] += struct_local_ml[k][i]*struct_local_ml[k][i];
         }
 
         for (int type=0; type<NTYPE; type++) {
@@ -48,8 +48,8 @@ void eval_struct_gnn(){
 
         for (int i=0; i<N*NS;i++) {
             int type = type_data[i];
-            struct_local_norm[i][k] = struct_local_filion[k][i];
-            struct_local_norm[i][k] = struct_local_filion[k][i] - mean[type];
+            struct_local_norm[i][k] = struct_local_ml[k][i];
+            struct_local_norm[i][k] = struct_local_ml[k][i] - mean[type];
             if (var[type] > 0.00000001) struct_local_norm[i][k] /= var[type];
         }
     }
