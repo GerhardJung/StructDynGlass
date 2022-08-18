@@ -40,13 +40,13 @@ void eval_rp(){
         }
 
         // first evaluate quantities
-        double uth[N*dim] = {0};
-        double flin[N*dim] = {0};
+        double uth[N*NDim] = {0};
+        double flin[N*NDim] = {0};
           srand (time(NULL));
         for (int s=0; s<NS;s++) { // loop over structures
 
             if (dyn_rearrange_mode==0) {
-                double result_loc[dim*dim], dx[dim];
+                double result_loc[NDim*NDim], dx[NDim];
                 for (int i=0; i<N;i++) { // loop over particles
                     for (int i2=0; i2<N;i2++) { // loop over particles
                         calc_2Depot(i+s*N,i2+s*N,0,0,result_loc,dx,hessian[i*N+i2]);
@@ -60,7 +60,7 @@ void eval_rp(){
                 //std::cout << j << " START HESSIAN" << std::endl;
 
                 if (dyn_rearrange_mode==1) {
-                    double result_loc[dim*dim], dx[dim];
+                    double result_loc[NDim*NDim], dx[NDim];
                     for (int i=0; i<N;i++) { // loop over particles
                         for (int i2=0; i2<N;i2++) { // loop over particles
                             calc_2Depot(i+s*N,i2+s*N,t,j,result_loc,dx,hessian[i*N+i2]);
@@ -72,36 +72,36 @@ void eval_rp(){
 
 
                 for (int i=0; i<N;i++) {
-                    for (int d=0; d<dim;d++) {
-                        uth[d+i*dim] = xyz_inherent_data[i+s*N][d+dim*NT*j] - xyz_inherent_data[i+s*N][d+t*dim+dim*NT*j];
-                        //std::cout << xyz_inherent_data[i+s*N][d+dim*NT*j] << " " << xyz_inherent_data[i+s*N][d+t*dim+dim*NT*j] << std::endl;
-                        apply_pbc(uth[d+i*dim]);
-                        //uth[d+i*dim] = ((double) rand() / (RAND_MAX)) + -0.5;
+                    for (int d=0; d<NDim;d++) {
+                        uth[d+i*NDim] = xyz_inherent_data[i+s*N][d+NDim*NT*j] - xyz_inherent_data[i+s*N][d+t*NDim+NDim*NT*j];
+                        //std::cout << xyz_inherent_data[i+s*N][d+NDim*NT*j] << " " << xyz_inherent_data[i+s*N][d+t*NDim+NDim*NT*j] << std::endl;
+                        apply_pbc(uth[d+i*NDim]);
+                        //uth[d+i*NDim] = ((double) rand() / (RAND_MAX)) + -0.5;
                     }
-                    //std::cout << "diff: " << uth[0+i*dim] << " " << uth[1+i*dim] << std::endl;
+                    //std::cout << "diff: " << uth[0+i*NDim] << " " << uth[1+i*NDim] << std::endl;
                 }
                 // multiply with hessian
-                for (int i=0; i<N*dim;i++) flin[i] = 0.0;
+                for (int i=0; i<N*NDim;i++) flin[i] = 0.0;
                 for (int i=0; i<N;i++) {
-                    for (int di=0; di<dim;di++) {
+                    for (int di=0; di<NDim;di++) {
                         for (int i2=0; i2<N;i2++) {
-                            for (int di2=0; di2<dim;di2++) {
-                                flin[di+i*dim] += hessian[i*N+i2][di2+di*dim]*uth[di2+i2*dim];
-                                //std::cout << "hessian " << hessian[s*N*N+i*N+i2][di2+di*dim] << std::endl;
+                            for (int di2=0; di2<NDim;di2++) {
+                                flin[di+i*NDim] += hessian[i*N+i2][di2+di*NDim]*uth[di2+i2*NDim];
+                                //std::cout << "hessian " << hessian[s*N*N+i*N+i2][di2+di*NDim] << std::endl;
                             }
                         }
                     }
                     double uth2 = 0.0;
-                    for (int di=0; di<dim;di++) uth2 += uth[di+i*dim]*uth[di+i*dim];
+                    for (int di=0; di<NDim;di++) uth2 += uth[di+i*NDim]*uth[di+i*NDim];
                     uth2 = sqrt(uth2);
                     if (uth2 < 1e-6) uth2 = 1e-6;
                     double log10uth2 = log10(uth2);
                     save_pat[s*N*NI+j*N+i] = log10uth2;
 
                     double fres = 0.0;
-                    for (int di=0; di<dim;di++) {
-                        fres += flin[di+i*dim]*flin[di+i*dim];
-                        //std::cout << "flin " << flin[di+i*dim] << std::endl;
+                    for (int di=0; di<NDim;di++) {
+                        fres += flin[di+i*NDim]*flin[di+i*NDim];
+                        //std::cout << "flin " << flin[di+i*NDim] << std::endl;
                     }
                     //std::cout << fres << std::endl;
                     fres = sqrt(fres);
@@ -110,7 +110,7 @@ void eval_rp(){
                     if (fres > dyn_rearrange_threshold) passive = 0.0;
                     double log10fres = log10(fres);
                     save_pat[NS*NI*N+s*N*NI+j*N+i] = log10fres;
-                    //save_pat[NS*NI*N+s*N*NI+j*N+i] = flin[i*dim];
+                    //save_pat[NS*NI*N+s*N*NI+j*N+i] = flin[i*NDim];
                     save_pat[2*NS*NI*N+s*N*NI+j*N+i] = passive;
                     if (s==0) save_pat_traj[t*N*NI+j*N+i] = log10fres;
                 }

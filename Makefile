@@ -11,7 +11,7 @@ MAKEFILE      = Makefile
 ####### Compiler, tools and options
 
 CC            = gcc
-CXX           = g++ -I../eigen_library -I../voro-master/2d/src/ -I../pickling-tools-master/src/opencontainers_1_8_5/include -I../pickling-tools-master/src  -DOC_NEW_STYLE_INCLUDES
+CXX           = g++ -I../eigen_library -I../voro-master/2d/src/ -I../voro-master/src/ -I../pickling-tools-master/src/opencontainers_1_8_5/include -I../pickling-tools-master/src  -DOC_NEW_STYLE_INCLUDES
 DEFINES       = -DQT_DEPRECATED_WARNINGS -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -O2 -Wall -W -g -w -D_REENTRANT -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -O2 -Wall -W -g -w -D_REENTRANT -fPIC $(DEFINES)
@@ -38,7 +38,7 @@ DISTNAME      = StructDynGlass1.0.0
 DISTDIR = /home/gerhardjung/Documents/machine_learning_project/StructDynGlass/.tmp/StructDynGlass1.0.0
 LINK          = g++
 LFLAGS        = -Wl,-O1 -Wl,-rpath,/home/gerhardjung/anaconda3/lib
-LIBS          = $(SUBLIBS) -L/home/gerhardjung/anaconda3/lib -L../voro-master/2d/src/ -L/home/gerhardjung/Documents/machine_learning_project/pickling-tools-master/src -fno-strict-aliasing -DLINUX_ -DOC_NEW_STYLE_INCLUDES -Wno-deprecated -fno-strict-aliasing -DLINUX_ -lQt5Gui -lQt5Core -lGL -lpthread -pthread -D_REENTRANT -lvoro++_2d -lptools
+LIBS          = $(SUBLIBS) -L/home/gerhardjung/anaconda3/lib -L../voro-master/2d/src/ -L../voro-master/src/ -L/home/gerhardjung/Documents/machine_learning_project/pickling-tools-master/src -fno-strict-aliasing -DLINUX_ -DOC_NEW_STYLE_INCLUDES -Wno-deprecated -fno-strict-aliasing -DLINUX_ -lQt5Gui -lQt5Core -lGL -lpthread -pthread -D_REENTRANT -lvoro++_2d -lptools
 AR            = ar cqs
 RANLIB        = 
 SED           = sed

@@ -1,12 +1,12 @@
 #include "struct_voronoi.h"
 #include "defs.h"
 #include "pbc.h"
-#include "voro++_2d.hh"
-using namespace voro;
+//#include "voro++_2d.hh"
+//using namespace voro;
 
 void eval_struct_voronoi(){
 
-    container_poly_2d con(-boxL/2.0,boxL/2.0,-boxL/2.0,boxL/2.0,10,10,true,true,16);
+    /*container_poly_2d con(-boxL/2.0,boxL/2.0,-boxL/2.0,boxL/2.0,10,10,true,true,16);
 
     // Add 1000 random points to the container
 	for(int i=0;i<N;i++) {
@@ -35,5 +35,5 @@ void eval_struct_voronoi(){
 			c.centroid(cx,cy);
 			c.neighbors(vi);
 			cout << con.id[ij][q] << " "<< *pp << " " << pp[0] << " " << c.perimeter() << " " << c.area() << " " << sqrt(cx*cx+cy*cy) << " " << vi.size() <<  std::endl;
-	} while(vl.inc());
+	} while(vl.inc());*/
 }

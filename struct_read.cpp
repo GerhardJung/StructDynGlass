@@ -10,43 +10,46 @@ void eval_struct_read(){
     std::cout << "EVAL STRUCT READ " << std::endl; 
 
     // open first to read structural descriptor
-    QFile infiles[NTYPE];
-    QTextStream infileStreams[NTYPE];
+    QFile infiles;
+    QTextStream infileStreams;
 
-    for (int type=0; type<NTYPE; type++) {
-        std::string s = std::to_string(type);
-        infiles[type].setFileName(QString::fromStdString(struct_read_file + "/pred_propensity_type"+ s + ".dat"));
-        infiles[type].open(QIODevice::ReadOnly | QIODevice::Text);
-        infileStreams[type].setDevice(&infiles[type]);
+    //for (int type=0; type<NTYPE; type++) {
+    //    std::string s = std::to_string(type);
+    infiles.setFileName(QString::fromStdString(struct_read_file + "/pred_propensity.dat"));
+    infiles.open(QIODevice::ReadOnly | QIODevice::Text);
+    infileStreams.setDevice(&infiles);
     
-
-        // read header
-        QString dummy;
-        for (int k=0; k< struct_read_Ntotal; k++) {
-            
-            QString name;
-            infileStreams[type] >> name;
-            //std::cout << k << " " << name.toStdString() << std::endl;
-            StructNames[struct_read_flag+k] = name.toStdString();
-            //std::cout << k << " " << StructNames[struct_read_flag+k] << std::endl;
-        }
+    // read header
+    QString name;
+    // read first column (ID)
+    infileStreams >> name;
+    for (int k=0; k< struct_read_Ntotal; k++) {
+        
+        infileStreams >> name;
+        //std::cout << k << " " << name.toStdString() << std::endl;
+        StructNames[struct_read_flag+k] = name.toStdString();
+        //std::cout << k << " " << StructNames[struct_read_flag+k] << std::endl;
     }
+    //}
 
     // read body
     for (int i=0; i<N*NS; i++) {
-        //std::cout << i << std::endl;
-        int type_loc = type_data[i];
+        int j;
+        infileStreams >> j;
+        if (j !=i) std::cout << "WRONG INDEX " << i << " " << j << std::endl;
         for (int k=0; k< struct_read_Ntotal; k++) {
-           infileStreams[type_loc] >> struct_local[NCG*(struct_read_flag+k)][i];
+           infileStreams >> struct_local[NCG*(struct_read_flag+k)][i];
            //if(i<5 && k==struct_read_Ntotal-1) std::cout <<struct_local[NCG*(struct_read_flag+k)][i] << std::endl;
         }
     }
 
     std::cout << "EVAL STRUCT READ: FINISHED1 " << std::endl; 
 
-    // eval chi4
+    // eval chi4, S4 and G4
     for (int k=0; k< struct_read_Ntotal; k++) {
-        //eval_struct(struct_read_flag+k);
+        int first = 0;
+        if (k==0) first = 1;
+        eval_struct(struct_local[NCG*(struct_read_flag+k)],StructNames[struct_read_flag+k],first);
     }
 
     std::cout << "EVAL STRUCT READ: FINISHED2 " << std::endl; 

@@ -36,9 +36,9 @@ void eval_struct_filion(){
             for (int j=0; j<N;j++) { // loop over particle pairs
                 if (j!=i) {
                     jType = type_data[j+s*N];
-                    double dr=0.0, dx[dim];
-                    double dr_inh=0.0, dx_inh[dim];
-                    for (int d=0; d<dim;d++) {
+                    double dr=0.0, dx[NDim];
+                    double dr_inh=0.0, dx_inh[NDim];
+                    for (int d=0; d<NDim;d++) {
                         dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
                         dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
                         apply_pbc(dx[d]);
@@ -267,7 +267,7 @@ void eval_radial(int i,int jType,double * dx, double dr, double ** out){
 
 void eval_angular(int i,double * dx, double dr, double * out){
     double psi[2*(2*lmax+1)*lmax];
-    if (dim==2) { // just calculate the angles in 2d
+    if (NDim==2) { // just calculate the angles in 2d
         double thetaij= (dx[1] > 0.0) ? acos(dx[0]/dr) : 2*M_PI-acos(dx[0]/dr);
 
         for (int l=lmin; l<lmax;l++) {
@@ -330,7 +330,7 @@ void eval_angular(int i,double * dx, double dr, double * out){
 
 void collect_angular_descriptors(int i, double * struct_filion_save, double ** struct_filion_classifiers){
 
-    if (dim==2) {
+    if (NDim==2) {
         for (int k=0;k<NAngular;k++) {
             double real_val = struct_filion_save[2*k];
             double imag_val = struct_filion_save[2*k+1];
@@ -362,8 +362,8 @@ void normalize_cg_descriptors(int struct_filion_mode, double ** struct_filion_cl
                 double C = 0.0;
 
                 for (int j=0; j<N;j++) { // loop over particle pairs
-                    double dr=0.0, dx[dim];
-                    for (int d=0; d<dim;d++) {
+                    double dr=0.0, dx[NDim];
+                    for (int d=0; d<NDim;d++) {
                         if (struct_filion_mode == 1) dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
                         else dx[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
                         apply_pbc(dx[d]);

@@ -97,7 +97,7 @@ void calc_print_global(){
      // find wmax
      double wmax = 0.0;
      for (int s=0; s<NS;s++) {
-        if( hessian_evalues[s*N*dim+N*dim-dim-1] > wmax ) wmax = hessian_evalues[s*N*dim+N*dim-dim-1];
+        if( hessian_evalues[s*N*NDim+N*NDim-NDim-1] > wmax ) wmax = hessian_evalues[s*N*NDim+N*NDim-NDim-1];
      }
 
      // reset histogram
@@ -108,10 +108,10 @@ void calc_print_global(){
      // fill histograms
      int Nquasi = 0;
      for (int s=0; s<NS;s++) {
-        for (int k=0; k<N*dim-dim;k++) {
-            double Pw = 1.0/(N*participation_ratio[s*N*dim+k]);
+        for (int k=0; k<N*NDim-NDim;k++) {
+            double Pw = 1.0/(N*participation_ratio[s*N*NDim+k]);
             
-            int wloc = hessian_evalues[s*N*dim+k]/wmax*NHistoSM;
+            int wloc = hessian_evalues[s*N*NDim+k]/wmax*NHistoSM;
             if (wloc < NHistoSM && wloc >=0) {
               sm_histograms[wloc][0] += 1.0;
               if (1.0/(N*Pw) < Pcut) {
@@ -132,7 +132,7 @@ void calc_print_global(){
     outGlobal2 << "time D(w) D_loc(w) P(w)\n";
     for (int l=0; l<NHistoSM; l++) {
         if (sm_histograms[l][0] > 0) {
-          outGlobal2 << (l+0.5)*wmax/((double)NHistoSM) << " " << sm_histograms[l][0]/((double) (dim*N-dim)*NS)<< " " << sm_histograms[l][1]/((double) Nquasi)<< " " << sm_histograms[l][2]/sm_histograms[l][0] ;
+          outGlobal2 << (l+0.5)*wmax/((double)NHistoSM) << " " << sm_histograms[l][0]/((double) (NDim*N-NDim)*NS)<< " " << sm_histograms[l][1]/((double) Nquasi)<< " " << sm_histograms[l][2]/sm_histograms[l][0] ;
           outGlobal2 << "\n";
         }
     }
@@ -145,14 +145,14 @@ void calc_print_global(){
     QTextStream outGlobal3(&outfileGlobal3);
     outGlobal3 << "w P(w)\n";
      for (int s=0; s<NS;s++) {
-        for (int k=0; k<N*dim-dim;k++) {
+        for (int k=0; k<N*NDim-NDim;k++) {
             double Pw = 0.0;
             for (int i=0; i<N;i++) {
                 double resloc=0.0;
-                for (int di=0; di<dim;di++) resloc+=hessian_evectors[s*N*dim+k][i*dim+di]*hessian_evectors[s*N*dim+k][i*dim+di];
+                for (int di=0; di<NDim;di++) resloc+=hessian_evectors[s*N*NDim+k][i*NDim+di]*hessian_evectors[s*N*NDim+k][i*NDim+di];
                 Pw += resloc*resloc;
             }
-            if (hessian_evalues[s*N*dim+k] > 0.0) outGlobal3 << hessian_evalues[s*N*dim+k]<< " " << 1.0/(N*Pw) << "\n";
+            if (hessian_evalues[s*N*NDim+k] > 0.0) outGlobal3 << hessian_evalues[s*N*NDim+k]<< " " << 1.0/(N*Pw) << "\n";
         }
     }
     outfileGlobal.close();

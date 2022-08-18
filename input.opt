@@ -1,22 +1,20 @@
 # Root Folder for simulation data
-../../../simulations/KA_model/md_isoconf/T0.44
+./data
 # Root Folder for evaluation
 ./
 # Cnf Start and Step Timestep
-3000000 3000000 0.01
+100000 100000 0.01
 # N_S N_I N_Histo N_Histo_Struct
-50 20 50 10
+2 2 10 10
 # Dimensions Model NTypes Cutoffs
-3 KA2 2 DISCRETE
+2 KA2-2D 3 DISCRETE
 # Dynamical observable (BB = bond-breaking, EXP = exponential decay (4th power), ISF = Intermediate Scattering Function (q \approx 7.0))
-5
-BB 1.45 1.7 0.0 1.0
-EXP 0.8 0.0 1.0
+3
+BB 1.4 1.8 0.0 1.0
+#EXP 0.8 0.0 1.0
 ISF 7.0 -1.0 1.0
 MSD 0.0 10.0 -3.0 2.0
-RP 10.0 -5.0 5.0 -5.0 5.0 0.0 1.0
+#RP 0 10.0 -5.0 5.0 -5.0 5.0 0.0 1.0
 # Structual observables (BASE = several different standard variables, i.e. g(r), \psi_5/6, density, theta etc. )
-3
-BASE 200 1.4
-SM 200 0.4 READ
-MLFILION
+1
+MLJUNG

@@ -60,7 +60,11 @@
 
             case 4 : {
                  const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
-                 dim = parts[0].toInt();
+                 int NDim_loc = parts[0].toInt();
+                 if (NDim_loc != NDim) {
+                     printf("Program compiled with NDimension %d but input script requests NDimension %d!\n",NDim,NDim_loc);
+                     exit(0);
+                 }
                  model = parts[1].toStdString();
                  NTYPE = parts[2].toInt();
                  type_cutoff= dvector(0,NTYPE-2); 
@@ -228,7 +232,7 @@
     std::cout << "EXTENDED XYZ OUT (DYN): " << folderOut << std::endl;
     std::cout << "CnfStart/CnfStep/timestep: " << CnfStart << " " << CnfStep << " " << timestep << std::endl;
     std::cout << "NS/NI/NHisto/NHistoStruct: " << NS << " " << NI << " " << NHisto << " " << NHistoStruct << std::endl;
-    std::cout << "Dimension/Model/NTypes: " << dim << " " << model << " " << NTYPE  << std::endl;
+    std::cout << "NDimension/Model/NTypes: " << NDim << " " << model << " " << NTYPE  << std::endl;
     std::cout << "EVALUATE " << NDyn << " dynamical observables:" << std::endl;
     if (bb_flag>=0) std::cout << "    " << bb_flag << ": Bond-Breaking " << sqrt(rcuti2) << " " << sqrt(rcuto2) << std::endl;
     if (exp_flag>=0) std::cout << "    " << exp_flag << ": Exponential Decay" << " " << sqrt(sqrt(1.0/exp_scale4i)) << std::endl;

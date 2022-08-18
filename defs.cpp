@@ -69,7 +69,6 @@ std::string struct_read_file;
 // DATA
 int N;                      // number of particles
 double boxL;
-int dim;
 std::string model;           // name of the potential model (for epot and hessian)
 int NTYPE;                   // number of different types
 double * type_cutoff;        // cutoffs to deal with polydisperse samples
@@ -119,8 +118,8 @@ void allocate_storage(){
     type_data = ivector(0,N*NS-1);
     dia_data = dvector(0,N*NS-1);
     NPerType = ivector(0,NTYPE-1);
-    xyz_data = dmatrix(0,N*NS-1,0,NI*NT*dim-1);
-    xyz_inherent_data = dmatrix(0,N*NS-1,0,NI*NT*dim-1);
+    xyz_data = dmatrix(0,N*NS-1,0,NI*NT*NDim-1);
+    xyz_inherent_data = dmatrix(0,N*NS-1,0,NI*NT*NDim-1);
     time_data = ivector(0,NT-1);
 
 
@@ -140,12 +139,12 @@ void allocate_storage(){
     if (struct_ml_flag>=0) struct_local_ml = dmatrix(0,4*(NTYPE+1)*NCG-1,0,N*NS-1);
 
     struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
-    if(struct_soft_modes_flag>=0 || rp_flag>=0) hessian = dmatrix(0,N*N-1,0,dim*dim-1);
+    if(struct_soft_modes_flag>=0 || rp_flag>=0) hessian = dmatrix(0,N*N-1,0,NDim*NDim-1);
     if(struct_soft_modes_flag>=0) {
-        hessian_evectors = dmatrix(0,N*dim-1,0,N*dim-1);
-        hessian_evalues = dvector(0,NS*N*dim-1);
+        hessian_evectors = dmatrix(0,N*NDim-1,0,N*NDim-1);
+        hessian_evalues = dvector(0,NS*N*NDim-1);
         sm_histograms = dmatrix(0,NHistoSM-1,0,2);
-        participation_ratio = dvector(0,NS*N*dim-1);
+        participation_ratio = dvector(0,NS*N*NDim-1);
     }
     if (struct_filion_flag >= 0) {
         struct_filion_descriptor_list = dmatrix(0,500,0,2);
@@ -165,7 +164,7 @@ void allocate_storage(){
     // initialize data
     for (int i = 0; i < NS*N; i++) {
         type_data[i] = 0;
-        for (int j = 0; j < NI*NT*dim; j++) {
+        for (int j = 0; j < NI*NT*NDim; j++) {
             xyz_data[i][j] = 0.0;
             xyz_inherent_data[i][j] = 0.0;
         }

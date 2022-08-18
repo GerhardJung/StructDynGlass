@@ -29,7 +29,7 @@ void eval_struct_base(){
                 jType = type_data[j+s*N];
                 double dr = 0.0, dx;
                 double dr_inherent = 0.0, dx_inherent;
-                for (int d=0; d<dim;d++) {
+                for (int d=0; d<NDim;d++) {
                     dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
                     apply_pbc(dx);
                     dr += dx*dx;
@@ -122,8 +122,8 @@ void rescale_print_gr(){
 }
 
 void calc_psi(int ** neighbors){
-    double dx[dim], dr;
-    double dx_inherent[dim], dr_inherent;
+    double dx[NDim], dr;
+    double dx_inherent[NDim], dr_inherent;
     double * save_psi = dvector(0,4*(2*(lmax)+1)*lmax-1);
     
     for (int s=0; s<NS;s++) { // loop over structures
@@ -134,7 +134,7 @@ void calc_psi(int ** neighbors){
                 //std::cout << n0 << " " << neighbors[i+s*N][n0] << std::endl;
                 //if(n0>17) std::cout << neighbors[i+s*N][n0] << std::endl;
                 dr = 0.0, dr_inherent=0.0;
-                for (int d=0; d<dim;d++) {
+                for (int d=0; d<NDim;d++) {
                     dx[d] = xyz_data[i+s*N][d] - xyz_data[neighbors[i+s*N][n0]+s*N][d];
                     apply_pbc(dx[d]);
                     dr += dx[d]*dx[d];
@@ -145,7 +145,7 @@ void calc_psi(int ** neighbors){
                 dr = sqrt(dr);
                 dr_inherent = sqrt(dr_inherent);
 
-                if (dim==2) {
+                if (NDim==2) {
                     double thetaij= (dx[1] > 0) ? acos(dx[0]/dr) : 2*M_PI-acos(dx[0]/dr);
                     double thetaij_inherent= (dx_inherent[1] > 0) ? acos(dx_inherent[0]/dr_inherent) : 2*M_PI-acos(dx_inherent[0]/dr_inherent);
                     //std::cout << n0 << " " << theta << " " << dx[0]/sqrt(dr) << std::endl;
@@ -175,7 +175,7 @@ void calc_psi(int ** neighbors){
                         }
                         if (neigh_check==1) { // found triangle ijk
                             dr = 0.0;
-                            for (int d=0; d<dim;d++) {
+                            for (int d=0; d<NDim;d++) {
                                 dx[d] = xyz_data[i+s*N][d] - xyz_data[neighbors[i+s*N][n1]+s*N][d];
                                 apply_pbc(dx[d]);
                                 dr += dx[d]*dx[d];
@@ -212,7 +212,7 @@ void calc_psi(int ** neighbors){
                 n0 ++;
             }
 
-            if (dim==2) {
+            if (NDim==2) {
                 // normalize theta tanaka
                 struct_local[NCG*(struct_base_flag+4)][i+s*N] /= n0*2.0;
                 struct_local[NCG*(struct_base_flag+5)][i+s*N] /= n0*2.0;
@@ -267,7 +267,7 @@ void eval_den_cg(){
             for (int j=0; j<N;j++) { // loop over particle pairs
                 double dr = 0.0, dx;
                 double dr_inherent = 0.0, dx_inherent;
-                for (int d=0; d<dim;d++) {
+                for (int d=0; d<NDim;d++) {
                     dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
                     apply_pbc(dx);
                     dr += dx*dx;
@@ -339,7 +339,7 @@ void write_descriptors_csv_phys(){
             for (int j=0; j<N;j++) { // loop over particle pairs
                 double dr = 0.0, dx;
                 double dr_inherent = 0.0, dx_inherent;
-                for (int d=0; d<dim;d++) {
+                for (int d=0; d<NDim;d++) {
                     dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
                     apply_pbc(dx);
                     dr += dx*dx;

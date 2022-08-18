@@ -136,7 +136,7 @@ void eval_isoconf(int t, int flag){
             //double mean=0.0;
             for (int j=0; j<N;j++) { // loop over particle pairs
                 double dr = 0.0, dx;
-                for (int d=0; d<dim;d++) {
+                for (int d=0; d<NDim;d++) {
                     dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
                     apply_pbc(dx);
                     dr += dx*dx;
@@ -574,6 +574,7 @@ void print_traj(double * save_dyn, int flag){
     int NIloc = NI;
     if (NIloc > 8) NIloc = 8;
     for (int j=0; j<NIloc; j++) {
+
         QString pathPred = pathOrig;
         pathPred.append(QString("struct_trajectory_%1.xyz").arg(j));
         std::cout << pathPred.toStdString() << std::endl;
@@ -581,15 +582,27 @@ void print_traj(double * save_dyn, int flag){
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred(&outfilePred);
         for (int t=0; t<NT; t++) {
+
+            // calc mean
+            double mean = 0.0;
+            for (int i = 0; i < N; i++) {
+                mean+=save_dyn[t*N*NI+j*N+i];
+            }
+            mean /= (double) N;
+            for (int i = 0; i < N; i++) {
+                if (save_dyn[t*N*NI+j*N+i] < mean) save_dyn[t*N*NI+j*N+i] = 0;
+                else save_dyn[t*N*NI+j*N+i] = 1;
+            }
+
             outPred << N << "\n";
-            outPred << "Properties=species:I:1:pos:R:" << dim;
+            outPred << "Properties=species:I:1:pos:R:" << NDim;
             outPred << ":LOG(FRES)/BB:R:1";
             outPred << " time " << time_data[t]*timestep << "\n";
             for (int i = 0; i < N; i++) {
-                if (dim == 2) {
-                    outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*dim+dim*NT*j] << " " << xyz_inherent_data[i][1+t*dim+dim*NT*j] << " ";
+                if (NDim == 2) {
+                    outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*NDim+NDim*NT*j] << " " << xyz_inherent_data[i][1+t*NDim+NDim*NT*j] << " ";
                 } else {
-                    outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*dim+dim*NT*j] << " " << xyz_inherent_data[i][1+t*dim+dim*NT*j] << " " << xyz_inherent_data[i][2+t*dim+dim*NT*j] << " ";
+                    outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*NDim+NDim*NT*j] << " " << xyz_inherent_data[i][1+t*NDim+NDim*NT*j] << " " << xyz_inherent_data[i][2+t*NDim+NDim*NT*j] << " ";
                 }
                 outPred << save_dyn[t*N*NI+j*N+i] << " ";
                 outPred << "\n";

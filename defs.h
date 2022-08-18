@@ -15,9 +15,9 @@
 #include "nrutil.h"
 #include "read_write_lammps.h"
 
-#define NCG 14
-
+#define NCG 16
 #define EPS 0.000000001
+#define NDim 2           
 
 // OPTIONS
 extern std::string lammpsIn;       // lammps xyz output folder for readin
@@ -88,7 +88,6 @@ extern std::string struct_read_file;
 // DATA
 extern int N;                      // number of particles
 extern double boxL;                // box size
-extern int dim;                    // number of dimensions
 extern std::string model;           // name of the potential model (for epot and hessian)
 extern int NTYPE;                   // number of different types
 extern double * type_cutoff;        // cutoffs to deal with polydisperse samples

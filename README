@@ -20,3 +20,23 @@ DATA EVALUATION (structure):
 -> Calculate various particle properties in the initial structure
 -> Print extended xyz files with particle properties
 -> Create batches for machine learning
+
+
+COMPILATION requires libaries:
+- Pickling tools (only for struct_gnn, can also be removed)
+- Voro++
+
+Compile:
+"qmake -project", and then 
+"qmake". 
+
+Include reuqired libaries in the Makefile. Example is shown in "add_to_make"
+
+Finally compile by writing "make".
+
+RUNNING: Just run the bin "StructDynGlass" in a folder with the option file "input.opt". An example is provided. 
+
+
+MACHINE LEARNING: 
+
+The folder "machine_learning" contains python scripts to learn structure-dynamics correlations in supercooled liquids. It takes as input the batch created by the "MLJUNG" option in input.opt. Requires installation of the "Tensorflow" libary.

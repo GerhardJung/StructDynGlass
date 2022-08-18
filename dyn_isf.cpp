@@ -15,7 +15,7 @@ void eval_isf(){
         for (int s=0; s<NS;s++) { // loop over structures
             for (int i=0; i<N;i++) {
                 for (int j=0; j<NI;j++) {
-                    double dx = xyz_data[i+s*N][d+dim*NT*j] - xyz_data[i+s*N][d+t*dim+dim*NT*j];
+                    double dx = xyz_data[i+s*N][d+NDim*NT*j] - xyz_data[i+s*N][d+t*NDim+NDim*NT*j];
                     apply_pbc(dx);
                     double C_loc= cos(qisf*dx);
                     //if (j==0 && i==0 && s==0) std::cout << "cut " <<dyn_ranges[isf_flag][2] << std::endl;

@@ -22,8 +22,8 @@ void eval_msd(){
             for (int s=0; s<NS;s++) { // loop over structures
                 for (int i=0; i<N;i++) {
                     double dr = 0, dx;
-                    for (int d=0; d<dim;d++) {
-                        dx = xyz_data[i+s*N][d] - xyz_data[i+s*N][d+t*dim];
+                    for (int d=0; d<NDim;d++) {
+                        dx = xyz_data[i+s*N][d] - xyz_data[i+s*N][d+t*NDim];
                         apply_pbc(dx);
                         dr += dx*dx;
                     }
@@ -40,8 +40,8 @@ void eval_msd(){
             for (int s=0; s<NS;s++) { // loop over structures
                 for (int i=0; i<N;i++) {
                     double dr = 0, dx;
-                    for (int d=0; d<dim;d++) {
-                        dx = xyz_data[i+s*N][d] - xyz_data[i+s*N][d+t*dim];
+                    for (int d=0; d<NDim;d++) {
+                        dx = xyz_data[i+s*N][d] - xyz_data[i+s*N][d+t*NDim];
                         apply_pbc(dx);
                         dr += dx*dx;
                     }
@@ -60,8 +60,8 @@ void eval_msd(){
                 for (int j=0; j<NI;j++) {
                     //std::cout << s << " " << i << " " << j  << std::endl; 
                     double dr = 0, dx;
-                    for (int d=0; d<dim;d++) {
-                        dx = xyz_data[i+s*N][d+dim*NT*j] - xyz_data[i+s*N][d+t*dim+dim*NT*j];
+                    for (int d=0; d<NDim;d++) {
+                        dx = xyz_data[i+s*N][d+NDim*NT*j] - xyz_data[i+s*N][d+t*NDim+NDim*NT*j];
                         apply_pbc(dx);
                         dr += dx*dx;
                     }
@@ -79,8 +79,8 @@ void eval_msd(){
             for (int i=0; i<N;i++) {
                 for (int j=0; j<NI;j++) {
                     double dr = 0, dx;
-                    for (int d=0; d<dim;d++) {
-                        dx = xyz_data[i+s*N][d+dim*NT*j] - xyz_data[i+s*N][d+t*dim+dim*NT*j];
+                    for (int d=0; d<NDim;d++) {
+                        dx = xyz_data[i+s*N][d+NDim*NT*j] - xyz_data[i+s*N][d+t*NDim+NDim*NT*j];
                         apply_pbc(dx);
                         dr += dx*dx;
                     }

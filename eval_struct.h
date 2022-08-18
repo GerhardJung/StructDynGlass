@@ -1,7 +1,9 @@
 #ifndef EVAL_STRUCT_H
 #define EVAL_STRUCT_H
 
-void eval_struct(int flag);
+#include "defs.h"
+
+void eval_struct(double * input_tensor,std::string input_name, int first);
 
 void calc_bonds_histograms_structure();
 

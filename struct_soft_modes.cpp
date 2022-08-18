@@ -15,7 +15,7 @@ void eval_struct_soft_modes(){
         std::cout << "EVAL STRUCT SOFT MODES: STURCTURE " << s << std::endl; 
 
         // calculate hessian
-        double result_loc[dim*dim], dx[dim];
+        double result_loc[NDim*NDim], dx[NDim];
         for (int i=0; i<N;i++) { // loop over particles
             for (int j=0; j<N;j++) { // loop over particles
                 calc_2Depot(i+s*N,j+s*N,0,0,result_loc,dx,hessian[i*N+j]);
@@ -52,19 +52,19 @@ void eval_struct_soft_modes(){
             double epot_im1_jp1 = calc_epot_tot(s);
             xyz_inherent_data[i+s*N][d1] += delta;
             xyz_inherent_data[j+s*N][d2] -= delta;
-            std::cout << hessian[s*N*N+i*N+j][d1*dim+d2] << " " << 0.25/delta/delta*(epot_ip1_jp1-epot_im1_jp1-epot_ip1_jm1+epot_im1_jm1) << std::endl;
+            std::cout << hessian[s*N*N+i*N+j][d1*NDim+d2] << " " << 0.25/delta/delta*(epot_ip1_jp1-epot_im1_jp1-epot_ip1_jm1+epot_im1_jm1) << std::endl;
         }*/
 
         if (modeSM==0) { // EigenDecomposition needs to be calculated
 
             MatrixXd Eigen_hessian;
 
-            Eigen_hessian = MatrixXd::Zero(N*dim,N*dim);
+            Eigen_hessian = MatrixXd::Zero(N*NDim,N*NDim);
             for (int i=0; i<N;i++) { // loop over particles
-                for (int d1=0; d1<dim;d1++) {
+                for (int d1=0; d1<NDim;d1++) {
                     for (int j=0; j<N;j++) { // loop over particles
-                        for (int d2=0; d2<dim;d2++) {
-                            Eigen_hessian(i*dim+d1,j*dim+d2) = hessian[i*N+j][d1*dim+d2];
+                        for (int d2=0; d2<NDim;d2++) {
+                            Eigen_hessian(i*NDim+d1,j*NDim+d2) = hessian[i*N+j][d1*NDim+d2];
                         }
                     }
                 }
@@ -83,8 +83,8 @@ void eval_struct_soft_modes(){
             VectorXcd ev = Eigen_decomposition.eigenvalues();
 
             // calculate ranks
-            double save_struct[dim*N]; 
-            for(int i = 0; i < dim*N; i++) {
+            double save_struct[NDim*N]; 
+            for(int i = 0; i < NDim*N; i++) {
                 if ( ev(i).real() < -0.00001) {
                     std::cout << "Negative Eigenvalue! " << ev(i).real() <<  std::endl;
                     std::cout << "Set to 100 such that it does not contribute! "  <<  std::endl;
@@ -93,19 +93,19 @@ void eval_struct_soft_modes(){
                 save_struct[i] = ev(i).real(); 
                 std::cout << ev(i).real() << std::endl;
             }
-            std::sort(save_struct, save_struct+dim*N); // sorting the array 
+            std::sort(save_struct, save_struct+NDim*N); // sorting the array 
             std::map<double, int> rank_struct; 
-            for (int i = 0; i < dim*N; i++) { 
+            for (int i = 0; i < NDim*N; i++) { 
                 rank_struct[save_struct[i]] = i; 
             }
             MatrixXcd evec = Eigen_decomposition.eigenvectors();
-            for (int k=0; k<N*dim;k++) { 
-                int ind = rank_struct[ev[k].real()] -dim;
-                // -dim because dim evalues are zero due to translational invariance
+            for (int k=0; k<N*NDim;k++) { 
+                int ind = rank_struct[ev[k].real()] -NDim;
+                // -NDim because NDim evalues are zero due to translational invariance
                 if (ind>=0) {
-                    hessian_evalues[s*N*dim+ind] = sqrt(ev[k].real());
+                    hessian_evalues[s*N*NDim+ind] = sqrt(ev[k].real());
                     VectorXcd vT = evec.col(k);
-                    for (int i=0; i<N*dim;i++) { 
+                    for (int i=0; i<N*NDim;i++) { 
                         hessian_evectors[ind][i] = vT[i].real();
                     }
                 }
@@ -113,24 +113,24 @@ void eval_struct_soft_modes(){
                 //std::cout << ev[k].real()  <<  std::endl;
             }
             // low level sanity checks
-            /*for (int k=0; k<N*dim-dim;k++) { 
-                std::cout << k << " " << hessian_evalues[s*N*dim+k] << std::endl;
+            /*for (int k=0; k<N*NDim-NDim;k++) { 
+                std::cout << k << " " << hessian_evalues[s*N*NDim+k] << std::endl;
             }*/
             // check that evectors are indeed eigenvectors
             /*int k=3;
             VectorXcd vT = evec.col(k);
-            for (int i=0; i<N*dim;i++) { 
+            for (int i=0; i<N*NDim;i++) { 
                 //double resultMult = 0.0;
-                //for (int j=0; j<N*dim;j++) { 
+                //for (int j=0; j<N*NDim;j++) { 
                 //    resultMult += Eigen_hessian(i,j)*vT[j].real();
                 //}
                 //std::cout << resultMult << " " << vT[i].real()*ev[k].real() << std::endl;
 
                 double resultMult = 0.0;
-                for (int j=0; j<N*dim;j++) { 
-                    resultMult += Eigen_hessian(i,j)*hessian_evectors[s*N*dim+k][j];
+                for (int j=0; j<N*NDim;j++) { 
+                    resultMult += Eigen_hessian(i,j)*hessian_evectors[s*N*NDim+k][j];
                 }
-                std::cout << resultMult << " " << hessian_evectors[s*N*dim+k][i]*hessian_evalues[s*N*dim+k]*hessian_evalues[s*N*dim+k] << std::endl;
+                std::cout << resultMult << " " << hessian_evectors[s*N*NDim+k][i]*hessian_evalues[s*N*NDim+k]*hessian_evalues[s*N*NDim+k] << std::endl;
             
             }*/
 
@@ -141,9 +141,9 @@ void eval_struct_soft_modes(){
             QFile outfileEigen(path);  
             outfileEigen.open(QIODevice::WriteOnly | QIODevice::Text);
             QTextStream outEigen(&outfileEigen);
-            for (int k=0; k<N*dim-dim;k++) { 
-                outEigen <<  hessian_evalues[s*N*dim+k] << " ";
-                for (int i=0; i<N*dim;i++) { 
+            for (int k=0; k<N*NDim-NDim;k++) { 
+                outEigen <<  hessian_evalues[s*N*NDim+k] << " ";
+                for (int i=0; i<N*NDim;i++) { 
                     outEigen << hessian_evectors[k][i] << " ";
                 }
                 outEigen << "\n";
@@ -158,14 +158,14 @@ void eval_struct_soft_modes(){
             QFile outfileEigen(path);  
             outfileEigen.open(QIODevice::ReadOnly | QIODevice::Text);
             QTextStream outEigen(&outfileEigen);
-            for (int k=0; k<N*dim-dim;k++) { 
-                outEigen >>  hessian_evalues[s*N*dim+k];
-                if ( !(hessian_evalues[s*N*dim+k] > 0.1) ) {
-                    std::cout << "Small Eigenvalue! " << hessian_evalues[s*N*dim+k] <<  std::endl;
+            for (int k=0; k<N*NDim-NDim;k++) { 
+                outEigen >>  hessian_evalues[s*N*NDim+k];
+                if ( !(hessian_evalues[s*N*NDim+k] > 0.1) ) {
+                    std::cout << "Small Eigenvalue! " << hessian_evalues[s*N*NDim+k] <<  std::endl;
                     std::cout << "Set to 10000 such that it does not contribute! "  <<  std::endl;
-                    hessian_evalues[s*N*dim+k] = 10000.0;
+                    hessian_evalues[s*N*NDim+k] = 10000.0;
                 }
-                for (int i=0; i<N*dim;i++) { 
+                for (int i=0; i<N*NDim;i++) { 
                     outEigen >> hessian_evectors[k][i];
                 }
             }
@@ -174,17 +174,17 @@ void eval_struct_soft_modes(){
         }
 
         // calculate participation ratio
-        for (int k=0; k<N*dim-dim;k++) {
+        for (int k=0; k<N*NDim-NDim;k++) {
             double Pw_mean = 0.0;
             double Pw = 0.0;
             for (int i=0; i<N;i++) {
                 double resloc=0.0;
-                for (int di=0; di<dim;di++) resloc+=hessian_evectors[k][i*dim+di]*hessian_evectors[k][i*dim+di];
+                for (int di=0; di<NDim;di++) resloc+=hessian_evectors[k][i*NDim+di]*hessian_evectors[k][i*NDim+di];
                 Pw_mean += resloc;
                 Pw += resloc*resloc;
             }
-            //std::cout << k << " " << hessian_evalues[s*N*dim+k] << " " << Pw_mean << " " << 1.0/(N*Pw) << std::endl;
-            participation_ratio[s*N*dim+k] = 1.0/(N*Pw);
+            //std::cout << k << " " << hessian_evalues[s*N*NDim+k] << " " << Pw_mean << " " << 1.0/(N*Pw) << std::endl;
+            participation_ratio[s*N*NDim+k] = 1.0/(N*Pw);
         }
         
 
@@ -192,9 +192,9 @@ void eval_struct_soft_modes(){
         for (int i=0; i<N;i++) {
             struct_local[NCG*(struct_soft_modes_flag)][i+s*N] = 0.0;
             for (int k=0; k<NLOW;k++) {
-                if(participation_ratio[s*N*dim+k] < Pcut ) {
-                    for (int di=0; di<dim;di++) struct_local[NCG*(struct_soft_modes_flag)][i+s*N] += hessian_evectors[k][i*dim+di]*hessian_evectors[k][i*dim+di];
-                    //std::cout << k << " " << participation_ratio[s*N*dim+k] << std::endl;
+                if(participation_ratio[s*N*NDim+k] < Pcut ) {
+                    for (int di=0; di<NDim;di++) struct_local[NCG*(struct_soft_modes_flag)][i+s*N] += hessian_evectors[k][i*NDim+di]*hessian_evectors[k][i*NDim+di];
+                    //std::cout << k << " " << participation_ratio[s*N*NDim+k] << std::endl;
                 }
             }   
         }
@@ -202,10 +202,10 @@ void eval_struct_soft_modes(){
         // calculate vibrality
         for (int i=0; i<N;i++) {
             struct_local[NCG*(struct_soft_modes_flag+1)][i+s*N] = 0.0;
-            for (int k=0; k<N*dim-dim;k++) {
+            for (int k=0; k<N*NDim-NDim;k++) {
                 double result_loc = 0.0;
-                for (int di=0; di<dim;di++) result_loc += hessian_evectors[k][i*dim+di]*hessian_evectors[k][i*dim+di];
-                struct_local[NCG*(struct_soft_modes_flag+1)][i+s*N] += result_loc/(hessian_evalues[s*N*dim+k]*hessian_evalues[s*N*dim+k]);
+                for (int di=0; di<NDim;di++) result_loc += hessian_evectors[k][i*NDim+di]*hessian_evectors[k][i*NDim+di];
+                struct_local[NCG*(struct_soft_modes_flag+1)][i+s*N] += result_loc/(hessian_evalues[s*N*NDim+k]*hessian_evalues[s*N*NDim+k]);
             }   
             //std::cout << struct_local[NCG*(struct_soft_modes_flag+1)][i+s*N] << std::endl;
         }
@@ -225,7 +225,7 @@ void eval_struct_soft_modes(){
             }
             for (int j=0; j<N;j++) { // loop over particle pairs
                 double dr = 0.0, dx;
-                for (int d=0; d<dim;d++) {
+                for (int d=0; d<NDim;d++) {
                     dx = xyz_data[i+s*N][d] - xyz_data[j+s*N][d];
                     apply_pbc(dx);
                     dr += dx*dx;
@@ -263,9 +263,9 @@ void eval_struct_soft_modes(){
 void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx, double * result) {
 
     // first reset result
-    for (int d1=0; d1<dim;d1++) {
-        for (int d2=0; d2<dim;d2++) {
-            result[d1*dim+d2] = 0.0;
+    for (int d1=0; d1<NDim;d1++) {
+        for (int d2=0; d2<NDim;d2++) {
+            result[d1*NDim+d2] = 0.0;
         }
     }
 
@@ -276,8 +276,8 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
         //std::cout << "s " << s << std::endl;
         for (int k=0; k<N;k++) { // loop over particle pairs
             double dr = 0.0;
-            for (int d=0; d<dim;d++) {
-                dx[d] = xyz_inherent_data[i][d+t*dim+dim*NT*iso] - xyz_inherent_data[k+s*N][d+t*dim+dim*NT*iso];
+            for (int d=0; d<NDim;d++) {
+                dx[d] = xyz_inherent_data[i][d+t*NDim+NDim*NT*iso] - xyz_inherent_data[k+s*N][d+t*NDim+NDim*NT*iso];
                 apply_pbc(dx[d]);
                 dr += dx[d]*dx[d];
             }
@@ -296,10 +296,10 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
                     double c4 = C4LJ / (sigma2*sigma2);
                     double E = 4.0 * epsilon * (8.0*c4 + 168.0*rij12i*rij2i*rij2i - 48.0*rij6i*rij2i*rij2i);
                     double F = 4.0 * epsilon * (2.0*c2 + 4.0*c4*dr - 12.0*rij12i*rij2i + 6.0*rij6i*rij2i);
-                    for (int d1=0; d1<dim;d1++) {
+                    for (int d1=0; d1<NDim;d1++) {
                         for (int d2=0; d2<=d1;d2++) {
-                            if (d1==d2) result[d1*dim+d2] += E*dx[d1]*dx[d1] + F;
-                            else result[d1*dim+d2] += E*dx[d1]*dx[d2];
+                            if (d1==d2) result[d1*NDim+d2] += E*dx[d1]*dx[d1] + F;
+                            else result[d1*NDim+d2] += E*dx[d1]*dx[d2];
                         }
                     }
                 }
@@ -317,19 +317,19 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
                     double c4 = C4POLY / (sigma2*sigma2);
                     double E = 4.0 * epsilon * (8.0*c4 + 168.0*rij12i*rij2i*rij2i);
                     double F = 4.0 * epsilon * (2.0*c2 + 4.0*c4*dr - 12.0*rij12i*rij2i);
-                    for (int d1=0; d1<dim;d1++) {
+                    for (int d1=0; d1<NDim;d1++) {
                         for (int d2=0; d2<=d1;d2++) {
-                            if (d1==d2) result[d1*dim+d2] += E*dx[d1]*dx[d1] + F;
-                            else result[d1*dim+d2] += E*dx[d1]*dx[d2];
+                            if (d1==d2) result[d1*NDim+d2] += E*dx[d1]*dx[d1] + F;
+                            else result[d1*NDim+d2] += E*dx[d1]*dx[d2];
                         }
                     }
                 }
             }
         }
 
-        for (int d1=0; d1<dim-1;d1++) {
-            for (int d2=d1+1; d2<dim;d2++) {
-                result[d1*dim+d2] = result[d2*dim+d1];
+        for (int d1=0; d1<NDim-1;d1++) {
+            for (int d2=d1+1; d2<NDim;d2++) {
+                result[d1*NDim+d2] = result[d2*NDim+d1];
             }
         }
 
@@ -343,8 +343,8 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
         double epsilon = determine_epsilon(iType, jType);
 
         double dr = 0.0;
-        for (int d=0; d<dim;d++) {
-            dx[d] = xyz_inherent_data[i][d+t*dim+dim*NT*iso] - xyz_inherent_data[j][d+t*dim+dim*NT*iso];
+        for (int d=0; d<NDim;d++) {
+            dx[d] = xyz_inherent_data[i][d+t*NDim+NDim*NT*iso] - xyz_inherent_data[j][d+t*NDim+NDim*NT*iso];
             apply_pbc(dx[d]);
             dr += dx[d]*dx[d];
         }
@@ -359,12 +359,12 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
                 double c4 = C4LJ / (sigma2*sigma2);
                 double E = -4.0 * epsilon * (8.0*c4 + 168.0*rij12i*rij2i*rij2i - 48.0*rij6i*rij2i*rij2i);
                 double F = -4.0 * epsilon * (2.0*c2 + 4.0*c4*dr - 12.0*rij12i*rij2i + 6.0*rij6i*rij2i);
-                for (int d1=0; d1<dim;d1++) {
-                    for (int d2=0; d2<dim;d2++) {
-                        if (d1==d2) result[d1*dim+d2] = E*dx[d1]*dx[d1] + F;
+                for (int d1=0; d1<NDim;d1++) {
+                    for (int d2=0; d2<NDim;d2++) {
+                        if (d1==d2) result[d1*NDim+d2] = E*dx[d1]*dx[d1] + F;
                         else {
-                            if (d1 > d2) result[d1*dim+d2] = result[d2*dim+d1];
-                            else result[d1*dim+d2] = E*dx[d1]*dx[d2];
+                            if (d1 > d2) result[d1*NDim+d2] = result[d2*NDim+d1];
+                            else result[d1*NDim+d2] = E*dx[d1]*dx[d2];
                         }
                     }
                 }
@@ -372,7 +372,7 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
         }
         if(model=="POLY") {
             if (dr < RC2POLY*sigma2) {
-                double result_loc[dim*dim];
+                double result_loc[NDim*NDim];
                 double rij2i =  1.0/dr;
                 double sigma2= sigma*sigma;
                 double rij6i = sigma2*sigma2*sigma2*rij2i*rij2i*rij2i;
@@ -381,12 +381,12 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
                 double c4 = C4POLY / (sigma2*sigma2);
                 double E = 4.0 * epsilon * (8.0*c4 + 168.0*rij12i*rij2i*rij2i);
                 double F = 4.0 * epsilon * (2.0*c2 + 4.0*c4*dr - 12.0*rij12i*rij2i);
-                for (int d1=0; d1<dim;d1++) {
-                    for (int d2=0; d2<dim;d2++) {
-                        if (d1==d2) result[d1*dim+d2] = E*dx[d1]*dx[d1] + F;
+                for (int d1=0; d1<NDim;d1++) {
+                    for (int d2=0; d2<NDim;d2++) {
+                        if (d1==d2) result[d1*NDim+d2] = E*dx[d1]*dx[d1] + F;
                         else {
-                            if (d1 > d2) result[d1*dim+d2] = result[d2*dim+d1];
-                            else result[d1*dim+d2] = E*dx[d1]*dx[d2];
+                            if (d1 > d2) result[d1*NDim+d2] = result[d2*NDim+d1];
+                            else result[d1*NDim+d2] = E*dx[d1]*dx[d2];
                         }
                     }
                 }
@@ -395,9 +395,9 @@ void calc_2Depot(int i, int j, int t, int iso, double * result_loc, double * dx,
     }
 
     /*if( (i==5 && j==6) ||(i==5 && j==5))
-        for (int d1=0; d1<dim;d1++) {
-            for (int d2=0; d2<dim;d2++) {
-                std::cout << i << " " << j << " " << result[d1*dim+d2] << std::endl;
+        for (int d1=0; d1<NDim;d1++) {
+            for (int d2=0; d2<NDim;d2++) {
+                std::cout << i << " " << j << " " << result[d1*NDim+d2] << std::endl;
             }
         }*/
 }
@@ -423,7 +423,7 @@ double calc_epot_tot(int s){
         for (int j=0; j<N;j++) { // loop over particle pairs
             int jType = type_data[j+s*N];
             double dr = 0.0, dx;
-            for (int d=0; d<dim;d++) {
+            for (int d=0; d<NDim;d++) {
                 dx = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
                 apply_pbc(dx);
                 dr += dx*dx;

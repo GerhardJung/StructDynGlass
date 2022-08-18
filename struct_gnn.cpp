@@ -68,7 +68,7 @@ void eval_struct_gnn(){
 
         // include box
         Arr box;
-        for (int d=0; d<dim; d++) {
+        for (int d=0; d<NDim; d++) {
             box.append(boxL);
         }
         t.insertKeyAndValue("box", box);
@@ -84,7 +84,7 @@ void eval_struct_gnn(){
         Arr positions;
         for (int i=0; i<N; i++) {
             Arr positions_loc;
-            for (int d=0; d<dim; d++) {
+            for (int d=0; d<NDim; d++) {
                 positions_loc.append(xyz_data[i+s*N][d]);
             }
             positions.append(positions_loc);
@@ -95,7 +95,7 @@ void eval_struct_gnn(){
         Arr positions_inh;
         for (int i=0; i<N; i++) {
             Arr positions_loc;
-            for (int d=0; d<dim; d++) {
+            for (int d=0; d<NDim; d++) {
                 positions_loc.append(xyz_data[i+s*N][d]);
             }
             positions_inh.append(positions_loc);
@@ -129,8 +129,8 @@ void eval_struct_gnn(){
                 Arr traj_times_replica;
                 for (int i=0; i<N; i++) {
                     Arr positions_loc;
-                    for (int d=0; d<dim; d++) {
-                        positions_loc.append(xyz_data[i+s*N][d+dim*t+dim*NT*j]);
+                    for (int d=0; d<NDim; d++) {
+                        positions_loc.append(xyz_data[i+s*N][d+NDim*t+NDim*NT*j]);
                     }
                     traj_times_replica.append(positions_loc);
                 }
