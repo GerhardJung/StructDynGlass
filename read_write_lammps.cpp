@@ -58,7 +58,7 @@ void read_files_lammps(){
             QFile infile(pathij);   // input file with xyz
             QFile infile_inherent(pathij_inherent);   // input file with xyz inherent
             infile.open(QIODevice::ReadOnly | QIODevice::Text);
-            infile_inherent.open(QIODevice::ReadOnly | QIODevice::Text);
+            if (inherent) infile_inherent.open(QIODevice::ReadOnly | QIODevice::Text);
             QTextStream infileStream(&infile);
             QTextStream infileStream_inherent(&infile_inherent);
             //std::cout << pathij.toStdString() << std::endl;
@@ -73,7 +73,7 @@ void read_files_lammps(){
 
                 // skip header
                 for (int l=0; l<7; l++) line = infileStream.readLine();
-                for (int l=0; l<9; l++) line = infileStream_inherent.readLine();
+                if (inherent) for (int l=0; l<9; l++) line = infileStream_inherent.readLine();
 
                 //if (j==0) std::cout << line.toStdString() << std::endl;
                 // read data
@@ -82,11 +82,11 @@ void read_files_lammps(){
                     double type_data_loc;
                     if (NDim == 2) {
                         infileStream >> type_data_loc >> xyz_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_data[l+s*N][1+NDim*t+NDim*NT*j];
-                        infileStream_inherent >> type_data_loc >> xyz_inherent_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_inherent_data[l+s*N][1+NDim*t+NDim*NT*j];
+                        if (inherent) infileStream_inherent >> type_data_loc >> xyz_inherent_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_inherent_data[l+s*N][1+NDim*t+NDim*NT*j];
                         //if (j==0 && i==0 && l==100) std::cout << "type " << type_data_loc<< " " << xyz_data[l+i*N][NDim*t+NDim*NT*j]  << " " << xyz_inherent_data[l+i*N][NDim*t+NDim*NT*j] << std::endl;
                     } else {
                         infileStream >> type_data_loc >> xyz_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_data[l+s*N][1+NDim*t+NDim*NT*j]  >> xyz_data[l+s*N][2+NDim*t+NDim*NT*j];
-                        infileStream_inherent >> type_data_loc >> xyz_inherent_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_inherent_data[l+s*N][1+NDim*t+NDim*NT*j]  >> xyz_inherent_data[l+s*N][2+NDim*t+NDim*NT*j];
+                        if (inherent) infileStream_inherent >> type_data_loc >> xyz_inherent_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_inherent_data[l+s*N][1+NDim*t+NDim*NT*j]  >> xyz_inherent_data[l+s*N][2+NDim*t+NDim*NT*j];
                         //if (j==0 && i==0 && l>1100) std::cout << "type " << type_data_loc<< " " << xyz_data[l+i*N][NDim*t+NDim*NT*j]  << " " << xyz_inherent_data[l+i*N][NDim*t+NDim*NT*j] << std::endl;
                     }
                     //dmean += type_data_loc;
@@ -103,11 +103,11 @@ void read_files_lammps(){
                 }
                 //std::cout << dmean/((double) N) << std::endl;
                 line = infileStream.readLine();
-                line = infileStream_inherent.readLine();
+                if (inherent) line = infileStream_inherent.readLine();
             }
 
             infile.close();
-            infile_inherent.close();
+            if (inherent) infile_inherent.close();
         }
     }
     std::cout << "NPerType ";
@@ -156,7 +156,7 @@ void print_xyz_isoconf(){
             else outPred << " timescale\n";
 
             // calc mean
-            double mean[NDynTotal] = {};
+            /*double mean[NDynTotal] = {};
             for (int i = 0; i < N; i++) {
                 for (int k=0; k<NDynTotal; k++) {
                     mean[k]+=dyn_avg_save[i+s*N][k*(NT+1)+t];
@@ -185,15 +185,17 @@ void print_xyz_isoconf(){
                     if (struct_local[k*NCG][i+s*N]< meanS[k]) struct_local[k*NCG][i+s*N] = 0;
                     else struct_local[k*NCG][i+s*N] = 1;
                 }
-            }
+            }*/
 
 
 
             for (int i = 0; i < N; i++) {
                 if (NDim == 2) {
-                    outPred << type_data[i+s*N]+1 << " " << xyz_inherent_data[i+s*N][0] << " " << xyz_inherent_data[i+s*N][1] << " ";
+                    if (inherent) outPred << type_data[i+s*N]+1 << " " << xyz_inherent_data[i+s*N][0] << " " << xyz_inherent_data[i+s*N][1] << " ";
+                    else outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " ";
                 } else {
-                    outPred << type_data[i+s*N]+1 << " " << xyz_inherent_data[i+s*N][0] << " " << xyz_inherent_data[i+s*N][1] << " " << xyz_inherent_data[i+s*N][2] << " ";
+                    if (inherent) outPred << type_data[i+s*N]+1 << " " << xyz_inherent_data[i+s*N][0] << " " << xyz_inherent_data[i+s*N][1] << " " << xyz_inherent_data[i+s*N][2] << " ";
+                    else outPred << type_data[i+s*N]+1 << " " << xyz_data[i+s*N][0] << " " << xyz_data[i+s*N][1] << " " << xyz_data[i+s*N][2] << " ";
                 }
                 for (int k=0; k<NStructTotal; k++) {
                     if (k<struct_read_flag || k>=struct_read_flag+struct_read_Ntotal) for (int c=0; c<NCG; c++) outPred << struct_local[k*NCG+c][i+s*N] << " ";

@@ -6,6 +6,10 @@
 
 void eval_isf(){
 
+    int flag = isf_flag;
+
+    double * save_bb_traj = new double [NS*NT*NI*N];
+
     int d=0;
     // loop over time
     for (int t=1; t<NT; t++) {
@@ -18,16 +22,19 @@ void eval_isf(){
                     double dx = xyz_data[i+s*N][d+NDim*NT*j] - xyz_data[i+s*N][d+t*NDim+NDim*NT*j];
                     apply_pbc(dx);
                     double C_loc= cos(qisf*dx);
-                    //if (j==0 && i==0 && s==0) std::cout << "cut " <<dyn_ranges[isf_flag][2] << std::endl;
-                    add_histogram_avg(s,i,j,dyn_ranges[isf_flag],C_loc);
+
+                    add_histogram_avg(s,i,j,dyn_ranges[flag],C_loc);
+                    save_bb_traj[s*NT*NI*N+t*N*NI+j*N+i] =C_loc;
                 }
             }
         }
 
         // the main evaluation for the isoconfigurational ensemble
-        eval_isoconf(t,isf_flag);
+        eval_isoconf(t,flag);
     }
     
+    // write results
+    print_traj(save_bb_traj, flag);
 
     // write results
     print_isoconf(isf_flag);

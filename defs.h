@@ -17,7 +17,9 @@
 
 #define NCG 16
 #define EPS 0.000000001
-#define NDim 2           
+#define NDim 2  
+//#define USE_RELATIVE  
+//#define CG_DYNAMICS       
 
 // OPTIONS
 extern std::string lammpsIn;       // lammps xyz output folder for readin
@@ -28,6 +30,7 @@ extern int NS;                     // number of different inital structures
 extern int NI;                     // number of different isoconfigurational trajectories
 extern int NHisto;                 // number of bin in the histograms (dynamical observables)
 extern int NHistoStruct;           // number of bin in the histograms (structural observables)
+extern int inherent;
 
 extern int NDyn;                   // number of dynamical observables to be analyzed
 extern int NDynTotal;               // number of final dynamical descriptors
@@ -44,6 +47,7 @@ extern int isf_flag;               // flags for dynamical observables (isf)
 extern double qisf;                // length scale for isf
 
 extern int msd_flag;            // flag for dynamical variables (msd)
+extern double overlap_cut;
 
 extern int rp_flag;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
 extern double dyn_rearrange_threshold; //threshold to differentiate between active and inactive
@@ -76,6 +80,7 @@ extern std::string struct_filion_file;
 extern double ** struct_filion_descriptor_list;
 
 extern int struct_ml_flag;
+extern int Ndes;
 
 extern int struct_gnn_flag;
 
@@ -131,7 +136,8 @@ extern double **dyn_struct_hist_iso;
 extern double **dyn_struct_hist_val;
 extern double **dyn_struct_pred;
 
-
+extern double hist_lower_time;
+extern double hist_upper_time;
 
 // Functions
 void allocate_storage();

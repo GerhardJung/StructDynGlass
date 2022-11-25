@@ -33,11 +33,12 @@ void eval_bb(){
         for (int s=0; s<NS;s++) { // loop over structures
             for (int i=0; i<N;i++) {
                 for (int j=0; j<NI;j++) {
-                    checkneighbors(s, i,j, t, n0, nt, neighbors);
+                    //if (t==1 ) std::cout << "Test" << std::endl;
+                    checkneighbors(s, i,j, t, n0, nt, neighbors, flag);
                     // add to probability distribution and averages
                     double C_loc= nt/((double) n0);
                     add_histogram_avg(s,i,j,dyn_ranges[flag],C_loc);
-                    //if (t==1 && C_loc <1) std::cout << s << " "<< i << " " << C_loc << std::endl;
+                    if (t==1 && C_loc <1) std::cout << s << " "<< i << " " << C_loc << std::endl;
                     save_bb_traj[s*NT*NI*N+t*N*NI+j*N+i] =C_loc;
                 }
             }
@@ -45,11 +46,40 @@ void eval_bb(){
 
         // the main evaluation for the isoconfigurational ensemble
         eval_isoconf(t,flag);
+
+
+#ifdef USE_RELATIVE
+    for (int i=0; i<N*NS; i++) {
+        for (int j=0; j<N_NEIGH_MAX;j++) {
+            dyn_avg_save[i][(flag+j+1)*(NT+1)+t] /= (double) NI;
+        }
+    }
+#endif
     }
 
+    std::cout << "test1" << std::endl;
     // calculate rearranging time scale
     eval_timescale(flag, 0.5);
+    // calc and save histograms for actual motion and isoconfigurational averages
+    double hist_lower = hist_lower_time;
+    double hist_upper = hist_upper_time;
+    for (int i = 0; i < NS*N; i++) {
+        int valint_dyn;
+        double val = log10 (dyn_avg_save[i][flag*(NT+1)+NT]);
+        if (val > hist_upper - EPS && val < hist_upper + EPS) valint_dyn = NHisto - 1;
+        else valint_dyn = (val-hist_lower)/(hist_upper - hist_lower)* ((double)NHisto);
 
+        if(valint_dyn >= 0 && valint_dyn < NHisto) dyn_hist_iso[NT+(NT+1)*flag][valint_dyn+NHisto*type_data[i]]+= 1.0;
+
+    }
+
+    // normalize histograms
+    for (int l = 0; l < NHisto; l++) {
+        for (int type=0; type<NTYPE; type++) {
+            dyn_hist_iso[NT+(NT+1)*flag][l+NHisto*type] /= (double) NS*NPerType[type];
+        }
+    }
+    std::cout << "test2" << std::endl;
 
     // just S and G
     if (boxL > 100.0) {
@@ -64,19 +94,19 @@ void eval_bb(){
         eval_struct(tmp,tmps,first);
 
         // calc S4, G4
-        for (int t=15; t<NT; t++) {
+        for (int t=40; t<41; t++) {
             first = 0;
 
             for (int i=0; i<N*NS; i++) {
-                tmp[i] = 1.0-dyn_avg_save[i][flag*(NT+1)+t];
+                tmp[i] = dyn_avg_save[i][flag*(NT+1)+t];
             }
             tmps = "BB"+std::to_string(t);
-            std::cout << tmps << " " << tmp[2] << std::endl;
+            
             eval_struct(tmp,tmps,first);
             for (int j=0; j<NI;j++) {
                 for (int s=0; s<NS; s++) {
                     for (int i=0; i<N; i++) {
-                        tmp[i+s*N] = 1.0-save_bb_traj[s*NT*NI*N+t*N*NI+j*N+i];
+                        tmp[i+s*N] = save_bb_traj[s*NT*NI*N+t*N*NI+j*N+i];
                     }
                 }
                 tmps = "BB"+std::to_string(t)+"Traj"+std::to_string(j);
@@ -85,8 +115,6 @@ void eval_bb(){
 
         }
     }
-
-        
 
 
     // write results
@@ -126,13 +154,13 @@ void findneighbors(double rcut2, int ** neighbors) {
     }
 }
 
-void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbors) {
+void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbors, int flag) {
     double dr, dx;
     n0 = 0;
     nt = 0;
     while (neighbors[i+s*N][n0] != -1 ) {
         //if(n0>5) std::cout << neighbors[i+s*N][n0] << std::endl;
-        dr = 0;
+        dr = 0.0;
         for (int d=0; d<NDim;d++) {
             dx = xyz_data[i+s*N][d+t*NDim+NDim*NT*j] - xyz_data[neighbors[i+s*N][n0]+s*N][d+t*NDim+NDim*NT*j];
             apply_pbc(dx);
@@ -144,6 +172,17 @@ void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbo
         if (dr < rcuto2*sigma*sigma) {
             nt ++;
         }
+
+        #ifdef USE_RELATIVE
+            double dr0 = 0.0;
+            for (int d=0; d<NDim;d++) {
+                dx = xyz_data[i+s*N][d] - xyz_data[neighbors[i+s*N][n0]+s*N][d];
+                apply_pbc(dx);
+                dr0 += dx*dx;
+            }
+            dyn_avg_save[i][(flag+n0+1)*(NT+1)+t] +=  dr - dr0;
+        #endif
+
         n0 ++;
     }
 }

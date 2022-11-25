@@ -9,6 +9,8 @@ void eval_msd(){
 
     int flag = msd_flag;
 
+    double * save_bb_traj = new double [NS*NT*NI*N];
+
     // loop over time
     for (int t=1; t<NT; t++) {
         std::cout << "EVAL MD " << t << std::endl; 
@@ -67,6 +69,7 @@ void eval_msd(){
                     }
                     dr = sqrt(dr);
                     add_histogram_avg(s,i,j,&dyn_ranges_time[flag][2*t],dr);
+                    save_bb_traj[s*NT*NI*N+t*N*NI+j*N+i] =dr;
                 }
             }
         }
@@ -100,6 +103,49 @@ void eval_msd(){
         eval_isoconf(t, flag+1);
 
     }
+
+
+    // just S and G
+    if (boxL > 100.0) {
+        double tmp[N*NS];
+        for (int s=0; s<NS; s++) {
+            for (int i=0; i<N; i++) {
+                tmp[i] = 1.0;
+            }
+        }
+        std::string tmps;
+
+        if (bb_flag==-1) {
+            std::string tmps = "BASE";
+            int first =1;
+            eval_struct(tmp,tmps,first);
+        }
+
+        // calc S4, G4
+        for (int t=25; t<35; t++) {
+            int first = 0;
+
+            for (int i=0; i<N*NS; i++) {
+                tmp[i] = ( tanh(  (dyn_avg_save[i][flag*(NT+1)+t]-overlap_cut)*20.0  ) + 1.0)/2.0;
+            }
+            tmps = "MD"+std::to_string(t);
+            
+            eval_struct(tmp,tmps,first);
+            for (int j=0; j<NI;j++) {
+                for (int s=0; s<NS; s++) {
+                    for (int i=0; i<N; i++) {
+                        tmp[i] = ( tanh(  (save_bb_traj[s*NT*NI*N+t*N*NI+j*N+i]-overlap_cut)*20.0  ) + 1.0)/2.0;
+                    }
+                }
+                tmps = "MD"+std::to_string(t)+"Traj"+std::to_string(j);
+                eval_struct(tmp,tmps,first);
+            }
+
+        }
+    }
+
+    // write results
+    print_traj(save_bb_traj, flag);
 
     // write results
     print_isoconf(flag);

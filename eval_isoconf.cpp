@@ -254,17 +254,17 @@ void calc_histograms_dynamics(int t, int flag){
         if (dyn_avg[i] > hist_upper - EPS && dyn_avg[i] < hist_upper + EPS) valint_dyn = NHisto - 1;
         else valint_dyn = (dyn_avg[i]-hist_lower)/(hist_upper - hist_lower)* ((double)NHisto);
 
-        if(valint_dyn >= 0 && valint_dyn < NHisto) dyn_hist_iso[t+NT*flag][valint_dyn+NHisto*type_data[i]]+= 1.0;
+        if(valint_dyn >= 0 && valint_dyn < NHisto) dyn_hist_iso[t+(NT+1)*flag][valint_dyn+NHisto*type_data[i]]+= 1.0;
         for (int l = 0; l < NHisto; l++) {
-            dyn_hist_val[t+NT*flag][l+NHisto*type_data[i]] += dyn_hist_data[i][l];
+            dyn_hist_val[t+(NT+1)*flag][l+NHisto*type_data[i]] += dyn_hist_data[i][l];
         }
     }
 
     // normalize histograms
     for (int l = 0; l < NHisto; l++) {
         for (int type=0; type<NTYPE; type++) {
-            dyn_hist_val[t+NT*flag][l+NHisto*type] /= (double) NS*NPerType[type];
-            dyn_hist_iso[t+NT*flag][l+NHisto*type] /= (double) NS*NPerType[type];
+            dyn_hist_val[t+(NT+1)*flag][l+NHisto*type] /= (double) NS*NPerType[type];
+            dyn_hist_iso[t+(NT+1)*flag][l+NHisto*type] /= (double) NS*NPerType[type];
         }
     }
 }
@@ -547,15 +547,17 @@ void print_isoconf(int flag){
     QFile outfileHisto(pathHisto);   // input file with xyz
     outfileHisto.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream outHisto(&outfileHisto);
-    for (int t=1; t<NT; t++) {
-        outHisto << time_data[t]*timestep << "\n";
+    for (int t=1; t<=NT; t++) {
+        if (t<NT) outHisto << time_data[t]*timestep << "\n";
+        else outHisto << "Relaxation time" << "\n";
         for (int j = 0; j < NHisto; j++) {
-            outHisto << hist_lower + (j+0.5)/((double)NHisto)*(hist_upper - hist_lower) << " ";
+            if (t<NT) outHisto << hist_lower + (j+0.5)/((double)NHisto)*(hist_upper - hist_lower) << " ";
+            else outHisto << hist_lower_time + (j+0.5)/((double)NHisto)*(hist_upper_time - hist_lower_time) << " ";
             for (int type=0; type<NTYPE; type++) {
-                outHisto <<  dyn_hist_val[t+NT*flag][j+NHisto*type] << " ";
+                outHisto <<  dyn_hist_val[t+(NT+1)*flag][j+NHisto*type] << " ";
             }
             for (int type=0; type<NTYPE; type++) {
-                outHisto <<  dyn_hist_iso[t+NT*flag][j+NHisto*type] << " ";
+                outHisto <<  dyn_hist_iso[t+(NT+1)*flag][j+NHisto*type] << " ";
             }
             outHisto << "\n";
         }
@@ -576,7 +578,7 @@ void print_traj(double * save_dyn, int flag){
     for (int j=0; j<NIloc; j++) {
 
         QString pathPred = pathOrig;
-        pathPred.append(QString("struct_trajectory_%1.xyz").arg(j));
+        pathPred.append(QString("struct_trajectory_%1_%2.xyz").arg(j).arg(QString::fromStdString(DynNames[flag])));
         std::cout << pathPred.toStdString() << std::endl;
         QFile outfilePred(pathPred);   // input file with xyz
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
@@ -584,7 +586,7 @@ void print_traj(double * save_dyn, int flag){
         for (int t=0; t<NT; t++) {
 
             // calc mean
-            double mean = 0.0;
+            /*double mean = 0.0;
             for (int i = 0; i < N; i++) {
                 mean+=save_dyn[t*N*NI+j*N+i];
             }
@@ -592,7 +594,7 @@ void print_traj(double * save_dyn, int flag){
             for (int i = 0; i < N; i++) {
                 if (save_dyn[t*N*NI+j*N+i] < mean) save_dyn[t*N*NI+j*N+i] = 0;
                 else save_dyn[t*N*NI+j*N+i] = 1;
-            }
+            }*/
 
             outPred << N << "\n";
             outPred << "Properties=species:I:1:pos:R:" << NDim;

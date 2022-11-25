@@ -27,6 +27,8 @@
     infile.open(QIODevice::ReadOnly | QIODevice::Text);
     QTextStream infileStream(&infile);
     
+
+
     // read input file
     const QRegExp rxInt(QLatin1String("[^0-9]+"));
     const QRegExp rxString(QLatin1String("[^A-Za-z0-9./_-]+"));
@@ -81,8 +83,8 @@
 
             case 5: {
                 NDyn = line.toInt();
-                dyn_ranges = dmatrix(0,NDyn+30-1,0,2);
-                DynNames = new std::string[NDyn+30];
+                dyn_ranges = dmatrix(0,NDyn+40-1,0,2);
+                DynNames = new std::string[NDyn+40];
                 if (NDyn == 0) {
                     line_counter++;
                 }
@@ -94,11 +96,21 @@
                 if (parts[0] == "BB") {
                     bb_flag = NDynTotal;
                     NDynTotal+=1;
+#ifdef USE_RELATIVE
+                    NDynTotal+=N_NEIGH_MAX;
+#endif
                     rcuti2 = parts[1].toDouble()*parts[1].toDouble();
                     rcuto2 = parts[2].toDouble()*parts[2].toDouble();
                     dyn_ranges[bb_flag][0] = parts[3].toDouble();
                     dyn_ranges[bb_flag][1] = parts[4].toDouble();
                     DynNames[bb_flag] = "BB";
+#ifdef USE_RELATIVE
+                    for (int i=0; i<N_NEIGH_MAX; i++)  {
+                        DynNames[bb_flag+i+1] = "DRREL" + std::to_string(i) + "X";
+                        dyn_ranges[bb_flag+i+1][0] = 0.0;
+                        dyn_ranges[bb_flag+i+1][1] = 1.0;
+                    }
+#endif
                 } else if (parts[0] == "EXP") {
                     exp_flag = NDynTotal;
                     NDynTotal+=1;
@@ -123,15 +135,17 @@
                     } else {
                         dyn_ranges[msd_flag][0] = - 10001.0; // calculate ranges dynamically
                     }
-                    if (parts[3] != "DYN") {
+                    if (parts[1] != "DYN") {
                         dyn_ranges[msd_flag+1][0] = parts[3].toDouble();
                         dyn_ranges[msd_flag+1][1] = parts[4].toDouble();
                     } else {
                         dyn_ranges[msd_flag+1][0] = - 10001.0; // calculate ranges dynamically
                     }
+                    if (parts.size() > 5) overlap_cut = parts[5].toDouble();
                     DynNames[msd_flag] = "MD";
                     DynNames[msd_flag+1] = "LOG(MD)";
                 }  else if (parts[0] == "RP") {
+                    inherent = 1;
                     rp_flag = NDynTotal;
                     NDynTotal+=3;
                     dyn_rearrange_mode = parts[1].toInt();
@@ -164,12 +178,14 @@
             }
             case 7: {
                 NStruct = line.toInt();
+                if (NStruct > 0) inherent = 1;
                 StructNames = new std::string[NStruct+550];
                 break;
             }
             case 8: {
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BASE") {
+
                     struct_base_flag = NStructTotal;
                     NStructTotal += 6+2*(lmax-lmin);
                     NHistoGr = parts[1].toInt();

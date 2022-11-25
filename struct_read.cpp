@@ -49,6 +49,14 @@ void eval_struct_read(){
     for (int k=0; k< struct_read_Ntotal; k++) {
         int first = 0;
         if (k==0) first = 1;
+        double avg = 0.0;
+        for (int i=0; i<N*NS; i++) {
+            avg += struct_local[NCG*(struct_read_flag+k)][i];
+        }
+        avg /= (double) N*NS;
+        for (int i=0; i<N*NS; i++) {
+            struct_local[NCG*(struct_read_flag+k)][i] -= avg;
+        }
         eval_struct(struct_local[NCG*(struct_read_flag+k)],StructNames[struct_read_flag+k],first);
     }
 

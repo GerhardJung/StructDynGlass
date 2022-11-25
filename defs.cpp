@@ -9,6 +9,7 @@ int NS;                     // number of different inital structures
 int NI;                     // number of different isoconfigurational trajectories
 int NHisto;
 int NHistoStruct;           // number of bin in the histograms (structural observables)
+int inherent=0;
 
 int NDyn;                   // number of dynamical observables to be analyzed
 int NDynTotal=0;               // number of final dynamical descriptors
@@ -25,6 +26,7 @@ int isf_flag=-1;               // flags for dynamical observables (isf)
 double qisf;                // length scale for isf
 
 int msd_flag=-1;            // flag for dynamical variables (msd)
+double overlap_cut = 0.44;
 
 int rp_flag=-1;             // flag for dynamical variables (strctural rearrangements as described by Patinet)
 double dyn_rearrange_threshold; //threshold to differentiate between active and inactive
@@ -57,6 +59,7 @@ std::string struct_filion_file;
 double ** struct_filion_descriptor_list;
 
 int struct_ml_flag=-1;
+int Ndes=2;
 
 int struct_gnn_flag=-1;
 
@@ -112,6 +115,9 @@ double **dyn_struct_hist_iso;
 double **dyn_struct_hist_val;
 double **dyn_struct_pred;
 
+double hist_lower_time = 1.0;
+double hist_upper_time = 5.0;
+
 void allocate_storage(){
 
     // allocate type and xyz data
@@ -136,7 +142,7 @@ void allocate_storage(){
 
     // allocate struct data
     if (NStructTotal>0) struct_local = dmatrix(0,NStructTotal*NCG-1,0,N*NS-1);
-    if (struct_ml_flag>=0) struct_local_ml = dmatrix(0,4*(NTYPE+1)*NCG-1,0,N*NS-1);
+    if (struct_ml_flag>=0) struct_local_ml = dmatrix(0,(Ndes+2)*(NTYPE+1)*NCG-1,0,N*NS-1);
 
     struct_base_gr = dmatrix(0,NTYPE*NTYPE,0,NHistoGr-1);
     if(struct_soft_modes_flag>=0 || rp_flag>=0) hessian = dmatrix(0,N*N-1,0,NDim*NDim-1);
@@ -151,8 +157,8 @@ void allocate_storage(){
     }
 
     // allocate dyn-struct correlation data and histogramms
-    if (NDynTotal>0) dyn_hist_iso = dmatrix(0,NT*NDynTotal-1,0,NTYPE*NHisto-1);
-    if (NDynTotal>0) dyn_hist_val = dmatrix(0,NT*NDynTotal-1,0,NTYPE*NHisto-1);
+    if (NDynTotal>0) dyn_hist_iso = dmatrix(0,(NT+1)*NDynTotal-1,0,NTYPE*NHisto-1);
+    if (NDynTotal>0) dyn_hist_val = dmatrix(0,(NT+1)*NDynTotal-1,0,NTYPE*NHisto-1);
     if (NDynTotal>0) dyn_ranges_time = dmatrix(0,NDynTotal-1,0,2*NT-1);
     if (NStructTotal>0) struct_ranges = dmatrix(0,NCG*NStructTotal-1,0,1);
     if (NStructTotal>0) struct_hist = dmatrix(0,NCG*NStructTotal-1,0,NTYPE*NHistoStruct-1);

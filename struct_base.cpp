@@ -280,7 +280,7 @@ void eval_den_cg(){
 
                 for (int c=0; c<NCG; c++) {
                     double L = c;
-                    L/=2.0;
+                    L*=2.0;
                     if (L < 0.1) L = 0.1;
                     double w = exp(-dr/L);
                     mean_den[c] += w;
@@ -298,7 +298,7 @@ void eval_den_cg(){
 
             for (int c=0; c<NCG; c++) {
                 double L = c;
-                L/=2.0;
+                L*=2.0;
                 if (L < 0.1) L = 0.1;
                 struct_local[NCG*(struct_base_flag)+c][i+s*N] = mean_den[c]/((L+1.0)*(L+1.0)*(L+1.0) );
                 struct_local[NCG*(struct_base_flag+1)+c][i+s*N] = mean_den_inherent[c]/((L+1.0)*(L+1.0)*(L+1.0) );
@@ -352,7 +352,7 @@ void write_descriptors_csv_phys(){
 
                 for (int c=0; c<NCG; c++) {
                     double L = c;
-                    L/=2.0;
+                    L*=2.0;
                     if (L < 0.1) L = 0.1;
                     double w = exp(-dr/L);
                     mean_den[c] += w;
@@ -375,7 +375,7 @@ void write_descriptors_csv_phys(){
 
             for (int c=1; c<NCG; c++) {
                 double L = c;
-                L/=2.0;
+                L*=2.0;
                 for (int k=0; k<Nother; k++) {
                     struct_local_var[i+s*N][(NCG-1)*(2*k)+c-1] = mean_rest[c+NCG*2*k]/mean_den[c];
                     // calculate standard deviation

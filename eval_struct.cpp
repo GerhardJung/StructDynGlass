@@ -285,7 +285,8 @@ void eval_struct(double * input_tensor,std::string input_name, int first){
     QTextStream outPred4(&outfilePred4);
 
 		for (int bin=0; bin<NBin;bin++) {
-      double scale_pred = boxL*boxL/(NS*3.1415926*((double) (DeltaBin*DeltaBin)*(2*bin+1)))/(NsAvg_pred*(NsAvg_pred-1.0));
+      //double scale_pred = boxL*boxL/(NS*3.1415926*((double) (DeltaBin*DeltaBin)*(2*bin+1)))/(NsAvg_pred*(NsAvg_pred-1.0));
+      double scale_pred = boxL*boxL/(NS*3.1415926*((double) (DeltaBin*DeltaBin)*(2*bin+1)));
       outPred4 <<  bin*DeltaBin << " " << G4[bin]*scale_pred << " " << G4[bin];
       outPred4 << "\n";
     }

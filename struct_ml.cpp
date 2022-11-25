@@ -75,6 +75,7 @@ void eval_struct_ml(){
                             
                             }
                         }
+
                     }
                 }
             } else {
@@ -97,9 +98,18 @@ void eval_struct_ml(){
 
             }
 
+
+                  /*      // calc dist inh states
+                        double dr_inh=0.0, dx_inh[NDim];
+                        for (int d=0; d<NDim;d++) {
+                            dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_data[i+s*N][d];
+                            apply_pbc(dx_inh[d]);
+                            dr_inh += dx_inh[d]*dx_inh[d];
+                        }
+                        struct_local_ml[(4*(NTYPE+1))*NCG][i+s*N] = dr_inh;*/
+
         }
 
-        printf("%d %f\n",s,struct_local_ml[(NTYPE+1)*NCG][0+s*N]);
 
         // include voronoi
         calc_voronoi(s);
@@ -174,14 +184,14 @@ void calc_voronoi(int s){
 // iterate over all particles to calculate coarse-grained quantities and density
 void eval_den_cg_ml(){
     double mean_den_inherent[(NTYPE+1)*NCG];
-    double mean_rest[4*(NTYPE+1)*NCG];
+    double mean_rest[Ndes*(NTYPE+1)*NCG];
 
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
 
             for (int c=0; c<NCG; c++) {
                 for (int type=0; type<(NTYPE+1); type++) mean_den_inherent[type*NCG+c] = 0.0;
-                for (int k=0; k<4*(NTYPE+1); k++) {
+                for (int k=0; k<Ndes*(NTYPE+1); k++) {
                     mean_rest[k*NCG+c] = 0.0;   
                 }
             }
@@ -224,11 +234,11 @@ void eval_den_cg_ml(){
                                         for (int type=0; type<NTYPE; type++) {
                                             if (type==type_data[jloc+s*N]) {
                                                 mean_den_inherent[type*NCG+c] += w_inherent;
-                                                for (int k=0; k<2; k++) mean_rest[type*NCG+k*(NTYPE+1)*NCG+c] += w_inherent*struct_local_ml[(NTYPE+1)*NCG+k*(NTYPE+1)*NCG][jloc+s*N];
+                                                for (int k=0; k<Ndes; k++) mean_rest[type*NCG+k*(NTYPE+1)*NCG+c] += w_inherent*struct_local_ml[(NTYPE+1)*NCG+k*(NTYPE+1)*NCG][jloc+s*N];
                                             }
                                         }
                                         mean_den_inherent[NTYPE*NCG+c] += w_inherent;
-                                        for (int k=0; k<2; k++) mean_rest[NTYPE*NCG+k*(NTYPE+1)*NCG+c] += w_inherent*struct_local_ml[(NTYPE+1)*NCG+k*(NTYPE+1)*NCG][jloc+s*N];
+                                        for (int k=0; k<Ndes; k++) mean_rest[NTYPE*NCG+k*(NTYPE+1)*NCG+c] += w_inherent*struct_local_ml[(NTYPE+1)*NCG+k*(NTYPE+1)*NCG][jloc+s*N];
                                     }
                                 }
                             }
@@ -255,11 +265,11 @@ void eval_den_cg_ml(){
                             for (int type=0; type<NTYPE; type++) {
                                 if (type==type_data[j+s*N]) {
                                     mean_den_inherent[type*NCG+c] += w_inherent;
-                                    for (int k=0; k<2; k++) mean_rest[type*NCG+k*(NTYPE+1)*NCG+c] += w_inherent*struct_local_ml[(NTYPE+1)*NCG+k*(NTYPE+1)*NCG][j+s*N];
+                                    for (int k=0; k<Ndes; k++) mean_rest[type*NCG+k*(NTYPE+1)*NCG+c] += w_inherent*struct_local_ml[(NTYPE+1)*NCG+k*(NTYPE+1)*NCG][j+s*N];
                                 }
                             }
                             mean_den_inherent[NTYPE*NCG+c] += w_inherent;
-                            for (int k=0; k<2; k++) mean_rest[NTYPE*NCG+k*(NTYPE+1)*NCG+c] += w_inherent*struct_local_ml[(NTYPE+1)*NCG+k*(NTYPE+1)*NCG][j+s*N];
+                            for (int k=0; k<Ndes; k++) mean_rest[NTYPE*NCG+k*(NTYPE+1)*NCG+c] += w_inherent*struct_local_ml[(NTYPE+1)*NCG+k*(NTYPE+1)*NCG][j+s*N];
                         }
                     }
 
@@ -272,7 +282,7 @@ void eval_den_cg_ml(){
             for (int c=1; c<NCG; c++) {
                 for (int type=0; type<(NTYPE+1); type++) {
                     struct_local_ml[type*NCG+c][i+s*N] = mean_den_inherent[type*NCG+c];
-                    for (int k=0; k<2; k++)  struct_local_ml[(NTYPE+1)*NCG+type*NCG+k*(NTYPE+1)*NCG+c][i+s*N] = mean_rest[type*NCG+k*(NTYPE+1)*NCG+c]/mean_den_inherent[type*NCG+c];
+                    for (int k=0; k<Ndes; k++)  struct_local_ml[(NTYPE+1)*NCG+type*NCG+k*(NTYPE+1)*NCG+c][i+s*N] = mean_rest[type*NCG+k*(NTYPE+1)*NCG+c]/mean_den_inherent[type*NCG+c];
                 }
             }
 
@@ -283,17 +293,17 @@ void eval_den_cg_ml(){
 
 void write_descriptors_csv(){
 
-    // calculate additional structural descriptors
+    // calculate additional structural descriptors (variances)
     double ** struct_local_var; 
     double mean_den_inherent[(NTYPE+1)*NCG];
-    double mean_rest[4*(NTYPE+1)*NCG];
+    double mean_rest[(NTYPE+1)*NCG];
 
     for (int s=0; s<NS;s++) { // loop over structures
         for (int i=0; i<N;i++) { // loop over particles
 
             for (int c=0; c<NCG; c++) {
                 for (int type=0; type<(NTYPE+1); type++) mean_den_inherent[type*NCG+c] = 0.0;
-                for (int k=0; k<4*(NTYPE+1); k++) {
+                for (int k=0; k<(NTYPE+1); k++) {
                      mean_rest[k*NCG+c] = 0.0;   
                 }
             }
@@ -400,8 +410,8 @@ void write_descriptors_csv(){
 
     // normalize physical structural descriptors to have mean zero and unit variance
     double ** struct_local_norm; 
-    struct_mean_var = dmatrix(0,4*(NTYPE+1)*NCG-1,0,2*NTYPE-1);
-    for (int k=0; k<4*(NTYPE+1)*NCG;k++) {
+    struct_mean_var = dmatrix(0,(Ndes+2)*(NTYPE+1)*NCG-1,0,2*NTYPE-1);
+    for (int k=0; k<(Ndes+2)*(NTYPE+1)*NCG;k++) {
 
         double mean[NTYPE];
         double var[NTYPE];
@@ -446,29 +456,36 @@ void write_descriptors_csv(){
         for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP_TYPE1" << c << ",";
         if (NTYPE==3) for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP_TYPE2" << c << ",";
         for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP_ALL" << c << ",";
+
         for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE0" << c << ",";
         for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE1" << c << ",";
         if (NTYPE==3) for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE2" << c << ",";
         for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_ALL" << c << ",";
+
+        //for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE0" << c << ",";
+        //for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE1" << c << ",";
+        //if (NTYPE==3) for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE2" << c << ",";
+        //for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_ALL" << c << ",";
+
         for (int d=0; d<NDim; d++) outPred2 << "NDim" << d << ",";
         outPred2 << "ID\n";
 
         // write body
 
         // length scale
-        for (int k=0; k<4*(NTYPE+1)*NCG; k++) {
+        for (int k=0; k<(Ndes+2)*(NTYPE+1)*NCG; k++) {
             outPred2 << (k % NCG)/2.0 << ",";
         }
         for (int d=0; d<NDim; d++) outPred2 << "0.0" << ",";
         outPred2 << "0.0\n";
 
         // mean and variance
-        for (int k=0; k<4*(NTYPE+1)*NCG; k++) {
+        for (int k=0; k<(Ndes+2)*(NTYPE+1)*NCG; k++) {
             outPred2 << struct_mean_var[k][2*type] << ",";
         }
         for (int d=0; d<NDim; d++) outPred2 << "0.0" << ",";
         outPred2 << "0.0\n";
-        for (int k=0; k<4*(NTYPE+1)*NCG; k++) {
+        for (int k=0; k<(Ndes+2)*(NTYPE+1)*NCG; k++) {
             outPred2 << struct_mean_var[k][2*type+1] << ",";
         }
         for (int d=0; d<NDim; d++) outPred2 << "0.0" << ",";
@@ -477,7 +494,7 @@ void write_descriptors_csv(){
         // particle data
         for (int i=0; i<N*NS; i++) {
             if (type_data[i] == type) {
-                for (int k=0; k<4*(NTYPE+1)*NCG; k++) outPred2 << struct_local_ml[k][i] << ",";
+                for (int k=0; k<(Ndes+2)*(NTYPE+1)*NCG; k++) outPred2 << struct_local_ml[k][i] << ",";
                 for (int d=0; d<NDim; d++) outPred2 << xyz_data[i][d] << ",";
                 outPred2 << i%N << "\n";
             }
@@ -489,10 +506,121 @@ void write_descriptors_csv(){
 
 void write_descriptors_csv_dyn(){
 
+    int NCG_DYN=1;
+    double ** dyn_avg_save_cg = dmatrix(0,N*NS-1,0,(NT+1)*NDynTotal*NCG_DYN-1); 
+
+    // cg dynamical descriptors
+    double ** struct_local_var; 
+    double mean_den_inherent[NCG_DYN];
+    double mean_rest[(NT+1)*NDynTotal*NCG_DYN];
+
+    for (int s=0; s<NS;s++) { // loop over structures
+        for (int i=0; i<N;i++) { // loop over particles
+
+
+            if (NCG_DYN > 1) {
+                for (int c=0; c<NCG_DYN; c++) {
+                    mean_den_inherent[c] = 0.0;
+                    for (int k=0; k<(NT+1)*NDynTotal; k++) {
+                        mean_rest[k*NCG_DYN+c] = 0.0;   
+                    }
+                }
+
+                if (CELL_LIST && Ncell > 3) {
+                    int cell_list_indexi = cell_list_index[s][i];
+                    int cell_list_y  = cell_list_indexi % Ncell;
+                    int cell_list_x  = (cell_list_indexi - cell_list_y)/Ncell;
+                    
+                    for (int a=cell_list_x - 1; a<= cell_list_x + 1; a++) {
+                        for (int b=cell_list_y - 1; b<= cell_list_y + 1; b++) {
+                            int aloc = a;
+                            int bloc = b;
+                            if (aloc < 0) aloc += Ncell;
+                            if (aloc >= Ncell) aloc -= Ncell;
+                            if (bloc < 0) bloc += Ncell;
+                            if (bloc >= Ncell) bloc -= Ncell;
+                            
+                            for (int j=0; j< Nmax; j++) {
+                                int jloc = cell_list[s*Ncell*Ncell+aloc*Ncell + bloc][j];
+                                //printf("%d %d\n",j,jloc);
+                                if (jloc != -1) {
+                                
+                                    double dr_inh=0.0, dx_inh[NDim];
+                                    for (int d=0; d<NDim;d++) {
+                                        dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[jloc+s*N][d];
+                                        apply_pbc(dx_inh[d]);
+                                        dr_inh += dx_inh[d]*dx_inh[d];
+                                    }
+                                    double dr_inherent = sqrt(dr_inh);
+
+                                    if (dr_inherent < rc) {
+
+                                        for (int c=1; c<NCG_DYN; c++) {
+                                            double L = c;
+                                            L*=2.0;
+                                            double w_inherent = exp(-dr_inherent/L);
+                                            if (type_data[i+s*N]==type_data[jloc+s*N]) {
+                                                mean_den_inherent[c] += w_inherent;
+                                                for (int k=0; k<(NT+1)*NDynTotal; k++) {
+                                                    double val = dyn_avg_save[jloc+s*N][k];
+                                                    mean_rest[k*NCG_DYN+c] += w_inherent*val;
+                                                }
+                                            }
+
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    for (int j=0; j<N;j++) { // loop over particle pairs
+                        double dr_inherent = 0.0, dx_inherent;
+                        for (int d=0; d<NDim;d++) {
+                            dx_inherent = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
+                            apply_pbc(dx_inherent);
+                            dr_inherent += dx_inherent*dx_inherent;
+                        }
+                        dr_inherent = sqrt(dr_inherent);
+
+                        if (dr_inherent < rc) {
+
+                            for (int c=1; c<NCG_DYN; c++) {
+                                double L = c;
+                                L*=2.0;
+                                double w_inherent = exp(-dr_inherent/L);
+                                if (type_data[i+s*N]==type_data[j+s*N]) {
+                                    mean_den_inherent[c] += w_inherent;
+                                    for (int k=0; k<(NT+1)*NDynTotal; k++) {
+                                        double val = dyn_avg_save[j+s*N][k];
+                                        mean_rest[k*NCG_DYN+c] += w_inherent*val;
+                                    }
+                                }
+
+                            }
+
+                        }
+                    }
+                }
+            }
+
+             for (int k=0; k<(NT+1)*NDynTotal; k++) {
+                dyn_avg_save_cg[i+s*N][k*NCG_DYN] = dyn_avg_save[i+s*N][k];
+
+            }
+            for (int c=1; c<NCG_DYN; c++) {
+                for (int k=0; k<(NT+1)*NDynTotal; k++) {
+                   dyn_avg_save_cg[i+s*N][k*NCG_DYN+c] = mean_rest[k*NCG_DYN+c]/mean_den_inherent[c];
+                }
+            }
+        }
+    }
+
     // normalize physical structural descriptors to have mean zero and unit variance
     double ** dyn_mean_var; 
-    dyn_mean_var = dmatrix(0,(NT+1)*NDynTotal-1,0,2*(NTYPE)-1);
-    for (int k=0; k<(NT+1)*NDynTotal;k++) {
+    dyn_mean_var = dmatrix(0,(NT+1)*NDynTotal*NCG_DYN-1,0,2*(NTYPE)-1);
+    for (int k=0; k<(NT+1)*NDynTotal*NCG_DYN;k++) {
 
         double mean[NTYPE];
         double var[NTYPE];
@@ -503,9 +631,9 @@ void write_descriptors_csv_dyn(){
         //std::cout << k << std::endl;
         for (int i=0; i<N*NS;i++) {
             int type = type_data[i];
-            if ( (k % (NT + 1) ) == NT && dyn_avg_save[i][k] > 0.000001 ) dyn_avg_save[i][k] = log10(dyn_avg_save[i][k]);
-            mean[type] += dyn_avg_save[i][k];
-            var[type] += dyn_avg_save[i][k]*dyn_avg_save[i][k];
+            if ( (k % (NT + 1)*NCG_DYN ) == NT && dyn_avg_save_cg[i][k] > 0.000001 ) dyn_avg_save_cg[i][k] = log10(dyn_avg_save_cg[i][k]);
+            mean[type] += dyn_avg_save_cg[i][k];
+            var[type] += dyn_avg_save_cg[i][k]*dyn_avg_save_cg[i][k];
         }
 
         for (int type=0; type<NTYPE; type++) {
@@ -525,15 +653,15 @@ void write_descriptors_csv_dyn(){
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred(&outfilePred);
         //write header
-        for (int k=0; k<NDynTotal; k++) for (int t=1; t<=NT; t++) outPred << QString::fromStdString(DynNames[k]) << t << ",";
+        for (int k=0; k<NDynTotal; k++) for (int t=1; t<=NT; t++) for (int c=0; c<NCG_DYN; c++) outPred << QString::fromStdString(DynNames[k]) << "CG" << c << "T" << t <<  ",";
         outPred << "\n";
 
         // mean and variance
-        for (int k=0; k<(NT+1)*NDynTotal; k++) {
+        for (int k=0; k<(NT+1)*NDynTotal*NCG_DYN; k++) {
             if ((k % (NT + 1) ) != 0) outPred << dyn_mean_var[k][2*type] << ",";
         }
         outPred<< "\n";
-        for (int k=0; k<(NT+1)*NDynTotal; k++) {
+        for (int k=0; k<(NT+1)*NDynTotal*NCG_DYN; k++) {
             if ((k % (NT + 1) ) != 0) outPred << dyn_mean_var[k][2*type+1] << ",";
         }
         outPred << "\n";
@@ -541,10 +669,8 @@ void write_descriptors_csv_dyn(){
         // write body
         for (int i=0; i<N*NS; i++) {
             if (type_data[i] == type) {
-                for (int k=0; k<NDynTotal; k++) {
-                    for (int t=1; t<=NT; t++) {
-                        outPred << dyn_avg_save[i][k*(NT+1)+t] << ",";
-                    }
+                for (int k=0; k<NDynTotal; k++) for (int t=1; t<=NT; t++) for (int c=0; c<NCG_DYN; c++) {
+                    outPred << dyn_avg_save_cg[i][k*(NT+1)*NCG_DYN+t*NCG_DYN+c] << ",";
                 }
                 outPred << "\n";
 
