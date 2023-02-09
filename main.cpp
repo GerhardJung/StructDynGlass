@@ -178,7 +178,6 @@
             }
             case 7: {
                 NStruct = line.toInt();
-                if (NStruct > 0) inherent = 1;
                 StructNames = new std::string[NStruct+550];
                 break;
             }
@@ -240,6 +239,7 @@
         }
         
     }
+    if (inherent==0 && NStruct==0) noinherent = 1;
 
     // write options
     std::cout << "Start Data Evaluation: ISOCONFIGURATIONAL ENSEMBLE" << std::endl;

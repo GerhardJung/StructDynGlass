@@ -10,6 +10,9 @@ int NI;                     // number of different isoconfigurational trajectori
 int NHisto;
 int NHistoStruct;           // number of bin in the histograms (structural observables)
 int inherent=0;
+int noinherent=0;
+int NCG=0;
+double * RCG;
 
 int NDyn;                   // number of dynamical observables to be analyzed
 int NDynTotal=0;               // number of final dynamical descriptors
@@ -93,6 +96,8 @@ double *dyn_avg2;
 double **dyn_pred;
 double ** dyn_avg_save;
 double ** dyn_avg_save_cg;
+int Nequi;
+double * equiBB;
 
 //STRUCT
 double **struct_local;
@@ -127,7 +132,6 @@ void allocate_storage(){
     xyz_data = dmatrix(0,N*NS-1,0,NI*NT*NDim-1);
     xyz_inherent_data = dmatrix(0,N*NS-1,0,NI*NT*NDim-1);
     time_data = ivector(0,NT-1);
-
 
     global_properties = dvector(0,NTYPE*5-1);
 

@@ -63,6 +63,7 @@ void eval_struct(double * input_tensor,std::string input_name, int first){
     for (int i=0; i<N*NS;i++) {
         if (type_data[i]==0) {
           res += input_tensor[i];
+          //if(i< 50) printf ("test %d %f\n",i,input_tensor[i]);
           countres += 1;
         }
     }
@@ -213,6 +214,7 @@ void eval_struct(double * input_tensor,std::string input_name, int first){
       rc = NBin*DeltaBin;
       Ncell = (int) boxL/rc;
       Nmax = 800;
+      printf("cell Ncell %d\n",Ncell);
       cell_list_index = imatrix(0,NS-1,0,N-1);
       cell_list = imatrix(0,NS*Ncell*Ncell-1,0,Nmax-1);
       create_cell_lists();

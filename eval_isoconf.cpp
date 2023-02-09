@@ -602,9 +602,9 @@ void print_traj(double * save_dyn, int flag){
             outPred << " time " << time_data[t]*timestep << "\n";
             for (int i = 0; i < N; i++) {
                 if (NDim == 2) {
-                    outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*NDim+NDim*NT*j] << " " << xyz_inherent_data[i][1+t*NDim+NDim*NT*j] << " ";
+                    outPred << type_data[i]+1 << " " << xyz_data[i][t*NDim+NDim*NT*j] << " " << xyz_data[i][1+t*NDim+NDim*NT*j] << " ";
                 } else {
-                    outPred << type_data[i]+1 << " " << xyz_inherent_data[i][t*NDim+NDim*NT*j] << " " << xyz_inherent_data[i][1+t*NDim+NDim*NT*j] << " " << xyz_inherent_data[i][2+t*NDim+NDim*NT*j] << " ";
+                    outPred << type_data[i]+1 << " " << xyz_data[i][t*NDim+NDim*NT*j] << " " << xyz_data[i][1+t*NDim+NDim*NT*j] << " " << xyz_data[i][2+t*NDim+NDim*NT*j] << " ";
                 }
                 outPred << save_dyn[t*N*NI+j*N+i] << " ";
                 outPred << "\n";
@@ -613,4 +613,67 @@ void print_traj(double * save_dyn, int flag){
         outfilePred.close();
     }
 
+}
+
+
+void print_R(double * save_dyn,int flag){
+
+    double * Cg_avg = new double [NT*NTYPE];
+    double * Cg_iso2 = new double [NT*NTYPE];
+    double * Cg2_iso = new double [NT*NTYPE];
+    double * chi4_iso = new double [NT*NTYPE];
+    double * chi4 = new double [NT*NTYPE];
+    double * R4 = new double [NT*NTYPE];
+
+    for (int type=0; type<NTYPE; type++) {
+        for (int t=1; t<NT; t++) {
+            Cg_avg[t+NT*type] = 0.0;
+            Cg_iso2[t+NT*type] = 0.0;
+            Cg2_iso[t+NT*type] = 0.0;
+            chi4_iso[t+NT*type] = 0.0;
+            chi4[t+NT*type] = 0.0;
+            R4[t+NT*type] = 0.0;
+            for (int s=0; s<NS; s++) {
+                double Cg_iso2_loc = 0.0;
+                for (int j=0; j<NI; j++) {
+                    double Cg = 0.0;
+                    for (int i=0; i<N; i++) {
+                        if(type_data[i+s*N] == type) Cg += save_dyn[s*NT*NI*N+t*N*NI+j*N+i];
+                    }
+                    Cg /= (double) NPerType[type];
+                    Cg_iso2_loc += Cg;
+                    Cg_avg[t+NT*type] += Cg;
+                    Cg2_iso[t+NT*type] += Cg*Cg;
+                }
+                Cg_iso2[t+NT*type] += Cg_iso2_loc*Cg_iso2_loc / ( (double) NI*NI );
+            }
+            Cg_iso2[t+NT*type] /= (double) NS;
+            Cg_avg[t+NT*type] /= (double) NS*NI;
+            Cg2_iso[t+NT*type] /= (double) NS*NI;
+            chi4[t+NT*type] = NPerType[type]*(Cg2_iso[t+NT*type] - Cg_avg[t+NT*type]*Cg_avg[t+NT*type]);
+            chi4_iso[t+NT*type] = NPerType[type]*(Cg_iso2[t+NT*type] - Cg_avg[t+NT*type]*Cg_avg[t+NT*type]);
+            if (t==36) printf("BB/chi4/var/mean %f %f %f %f\n",Cg_avg[t+NT*type],chi4_iso[t+NT*type],Cg_iso2[t+NT*type]*NPerType[type]*NPerType[type], Cg_avg[t+NT*type]*NPerType[type] );
+            R4[t+NT*type] = chi4_iso[t+NT*type] / chi4[t+NT*type];
+        }
+    }
+
+    // print R factor
+    QString pathOrig = QString::fromStdString(folderOut);
+    QString pathPred = pathOrig;
+    pathPred.append(QString("/isoconf_R_%1.dat").arg(QString::fromStdString(DynNames[flag])));
+    QFile outfilePred(pathPred);   // input file with xyz
+    outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream outPred(&outfilePred);
+    for (int t=1; t<NT; t++) {
+        outPred << time_data[t]*timestep << " ";
+        for (int type=0; type<NTYPE; type++) {
+            outPred << dyn_pred[t+NT*flag][5*type + 0] << " ";
+            outPred << dyn_pred[t+NT*flag][5*type + 2] << " ";
+            outPred << chi4[t+NT*type] << " ";
+            outPred << chi4_iso[t+NT*type] << " ";
+            outPred << R4[t+NT*type] << " ";
+        }
+        outPred << "\n";
+    }
+    outfilePred.close();
 }

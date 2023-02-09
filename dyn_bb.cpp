@@ -79,10 +79,9 @@ void eval_bb(){
             dyn_hist_iso[NT+(NT+1)*flag][l+NHisto*type] /= (double) NS*NPerType[type];
         }
     }
-    std::cout << "test2" << std::endl;
 
     // just S and G
-    if (boxL > 100.0) {
+    if (boxL > 100.0 && !noinherent) {
         double tmp[N*NS];
         for (int s=0; s<NS; s++) {
             for (int i=0; i<N; i++) {
@@ -94,7 +93,7 @@ void eval_bb(){
         eval_struct(tmp,tmps,first);
 
         // calc S4, G4
-        for (int t=40; t<41; t++) {
+        for (int t=35; t<37; t++) {
             first = 0;
 
             for (int i=0; i<N*NS; i++) {
@@ -103,7 +102,7 @@ void eval_bb(){
             tmps = "BB"+std::to_string(t);
             
             eval_struct(tmp,tmps,first);
-            for (int j=0; j<NI;j++) {
+            /*for (int j=0; j<NI;j++) {
                 for (int s=0; s<NS; s++) {
                     for (int i=0; i<N; i++) {
                         tmp[i+s*N] = save_bb_traj[s*NT*NI*N+t*N*NI+j*N+i];
@@ -111,17 +110,20 @@ void eval_bb(){
                 }
                 tmps = "BB"+std::to_string(t)+"Traj"+std::to_string(j);
                 eval_struct(tmp,tmps,first);
-            }
+            }*/
 
         }
     }
 
 
-    // write results
+    // write trajectories
     print_traj(save_bb_traj, flag);
 
     // write results
     print_isoconf(flag);
+
+    // calculate and write R file
+    print_R(save_bb_traj, flag);
 
     free_imatrix(neighbors,0,NS*N-1,0,N_NEIGH_MAX-1);
 }
@@ -143,6 +145,7 @@ void findneighbors(double rcut2, int ** neighbors) {
                 }
 
                 double sigma = determine_sigma(i,j);
+                //double sigma = 1.0;
 
                 if (dr < rcut2*sigma*sigma && i != j ) {
                     neighbors[i+s*N][ncount] = j;
@@ -168,6 +171,7 @@ void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbo
         }
 
         double sigma = determine_sigma(i,j);
+        //double sigma = 1.0;
 
         if (dr < rcuto2*sigma*sigma) {
             nt ++;

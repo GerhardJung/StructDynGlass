@@ -3,6 +3,23 @@
 
 void read_files_lammps(){
 
+    // read file to read coarse-graining parameters
+    QString pathcg = QString::fromStdString("./cg.in");
+    QFile infilecg(pathcg);   // input file with xyz
+    infilecg.open(QIODevice::ReadOnly | QIODevice::Text);
+    QTextStream infileStreamcg(&infilecg);
+    const QRegExp rxString2(QLatin1String("[^A-Za-z0-9./_-]+"));
+    QString line = infileStreamcg.readLine();
+    const auto&& parts = line.split(rxString2, QString::SkipEmptyParts);
+    NCG = parts[0].toInt();
+    RCG = dvector(0,NCG-1);
+    for (int i=0; i<NCG; i++) {
+        QString line = infileStreamcg.readLine();
+        const auto&& parts = line.split(rxString2, QString::SkipEmptyParts);
+        RCG[i] = parts[0].toDouble();
+    }
+
+
     // open first file to detect particle number, box size, NDimension and timesteps
     QString path = QString::fromStdString(lammpsIn);
     path.append("/Cnf-");
@@ -14,7 +31,6 @@ void read_files_lammps(){
     QTextStream infileStream(&infile);
 
     int Nloc = 0;
-    QString line;
     const QRegExp rxString(QLatin1String("[^A-Z0-9]+"));
     while (!infileStream.atEnd()){
         Nloc++;
@@ -56,11 +72,14 @@ void read_files_lammps(){
             pathij_inherent.append(QString("%1_inherent.xyz").arg(j+1));
 
             QFile infile(pathij);   // input file with xyz
-            QFile infile_inherent(pathij_inherent);   // input file with xyz inherent
+            QFile infile_inherent;
+            //printf("noinherent %d\n",noinherent);
+            if (!noinherent) infile_inherent.setFileName(pathij_inherent);   // input file with xyz inherent
             infile.open(QIODevice::ReadOnly | QIODevice::Text);
-            if (inherent) infile_inherent.open(QIODevice::ReadOnly | QIODevice::Text);
+            if (!noinherent) infile_inherent.open(QIODevice::ReadOnly | QIODevice::Text);
             QTextStream infileStream(&infile);
-            QTextStream infileStream_inherent(&infile_inherent);
+            QTextStream infileStream_inherent;
+            if (!noinherent) infileStream_inherent.setDevice  (&infile_inherent);
             //std::cout << pathij.toStdString() << std::endl;
 
             for (int t=0; t<NT; t++) {
@@ -73,7 +92,7 @@ void read_files_lammps(){
 
                 // skip header
                 for (int l=0; l<7; l++) line = infileStream.readLine();
-                if (inherent) for (int l=0; l<9; l++) line = infileStream_inherent.readLine();
+                if (!noinherent)for (int l=0; l<9; l++) line = infileStream_inherent.readLine();
 
                 //if (j==0) std::cout << line.toStdString() << std::endl;
                 // read data
@@ -82,23 +101,26 @@ void read_files_lammps(){
                     double type_data_loc;
                     if (NDim == 2) {
                         infileStream >> type_data_loc >> xyz_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_data[l+s*N][1+NDim*t+NDim*NT*j];
-                        if (inherent) infileStream_inherent >> type_data_loc >> xyz_inherent_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_inherent_data[l+s*N][1+NDim*t+NDim*NT*j];
+                        if (!noinherent)if (t==0 || inherent) infileStream_inherent >> type_data_loc >> xyz_inherent_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_inherent_data[l+s*N][1+NDim*t+NDim*NT*j];
                         //if (j==0 && i==0 && l==100) std::cout << "type " << type_data_loc<< " " << xyz_data[l+i*N][NDim*t+NDim*NT*j]  << " " << xyz_inherent_data[l+i*N][NDim*t+NDim*NT*j] << std::endl;
                     } else {
                         infileStream >> type_data_loc >> xyz_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_data[l+s*N][1+NDim*t+NDim*NT*j]  >> xyz_data[l+s*N][2+NDim*t+NDim*NT*j];
-                        if (inherent) infileStream_inherent >> type_data_loc >> xyz_inherent_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_inherent_data[l+s*N][1+NDim*t+NDim*NT*j]  >> xyz_inherent_data[l+s*N][2+NDim*t+NDim*NT*j];
+                        if (!noinherent)if (t==0 || inherent) infileStream_inherent >> type_data_loc >> xyz_inherent_data[l+s*N][NDim*t+NDim*NT*j] >> xyz_inherent_data[l+s*N][1+NDim*t+NDim*NT*j]  >> xyz_inherent_data[l+s*N][2+NDim*t+NDim*NT*j];
                         //if (j==0 && i==0 && l>1100) std::cout << "type " << type_data_loc<< " " << xyz_data[l+i*N][NDim*t+NDim*NT*j]  << " " << xyz_inherent_data[l+i*N][NDim*t+NDim*NT*j] << std::endl;
                     }
                     //dmean += type_data_loc;
-                    if (type_cutoff[0]< 0) type_data[l+s*N] = type_data_loc - 1.0 + 0.01;
-                    else {
-                        int type_loc = 0;
-                        while (type_data_loc > type_cutoff[type_loc] && type_loc < NTYPE -1 ) type_loc++;
-                        type_data[l+s*N] = type_loc;
-                        dia_data[l+s*N] = type_data_loc;
+
+                    if(j==0 && t==0) {
+                        if (type_cutoff[0]< 0) type_data[l+s*N] = type_data_loc - 1.0 + 0.01;
+                        else {
+                            int type_loc = 0;
+                            while (type_data_loc > type_cutoff[type_loc] && type_loc < NTYPE -1 ) type_loc++;
+                            type_data[l+s*N] = type_loc;
+                            dia_data[l+s*N] = type_data_loc;
+                        }
+                        //std::cout << type_data_loc << " " << type_data[l+i*N] << std::endl;
+                        if (s==0) NPerType[type_data[l+s*N]] ++;
                     }
-                    //std::cout << type_data_loc << " " << type_data[l+i*N] << std::endl;
-                    if(s==0 && j==0 && t==0) NPerType[type_data[l+s*N]] ++;
                     
                 }
                 //std::cout << dmean/((double) N) << std::endl;
@@ -107,7 +129,7 @@ void read_files_lammps(){
             }
 
             infile.close();
-            if (inherent) infile_inherent.close();
+            infile_inherent.close();
         }
     }
     std::cout << "NPerType ";

@@ -19,5 +19,6 @@ void eval_pearson_spearman_correlation(int t,double * struct_array,int loc_struc
 
 void print_isoconf(int flag);
 void print_traj(double * save_dyn,int flag);
+void print_R(double * save_dyn,int flag);
 
 #endif

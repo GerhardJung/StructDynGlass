@@ -4,8 +4,6 @@
 #include "struct_base.h"
 #include "defs.h"
 #include "pbc.h"
-#include "voro++_2d.hh"
-using namespace voro;
 
 #include <cmath>
 

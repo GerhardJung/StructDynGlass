@@ -15,11 +15,10 @@
 #include "nrutil.h"
 #include "read_write_lammps.h"
 
-#define NCG 16
 #define EPS 0.000000001
-#define NDim 2  
+#define NDim 2
 //#define USE_RELATIVE  
-//#define CG_DYNAMICS       
+//#define EQUIBB     
 
 // OPTIONS
 extern std::string lammpsIn;       // lammps xyz output folder for readin
@@ -31,6 +30,9 @@ extern int NI;                     // number of different isoconfigurational tra
 extern int NHisto;                 // number of bin in the histograms (dynamical observables)
 extern int NHistoStruct;           // number of bin in the histograms (structural observables)
 extern int inherent;
+extern int noinherent;
+extern int NCG;
+extern double * RCG;
 
 extern int NDyn;                   // number of dynamical observables to be analyzed
 extern int NDynTotal;               // number of final dynamical descriptors
@@ -114,6 +116,8 @@ extern double *dyn_avg2;
 extern double **dyn_pred;
 extern double **dyn_avg_save;
 extern double **dyn_avg_save_cg;
+extern int Nequi;
+extern double * equiBB;
 
 //STRUCT
 extern double **struct_local;

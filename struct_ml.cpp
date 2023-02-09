@@ -29,9 +29,9 @@ void eval_struct_ml(){
     std::cout << "EVAL STRUCT ML" << std::endl; 
 
     // calculate constants for cell list calculation
-    rc = 15.0;
+    rc = 20.0;
     Ncell = (int) boxL/rc;
-    Nmax = 400;
+    Nmax = 600;
     if (CELL_LIST && Ncell > 3) {
         cell_list_index = imatrix(0,NS-1,0,N-1);
         cell_list = imatrix(0,NS*Ncell*Ncell-1,0,Nmax-1);
@@ -226,11 +226,11 @@ void eval_den_cg_ml(){
                                 if (dr_inherent < rc) {
 
 
-                                    for (int c=1; c<NCG; c++) {
-                                        double L = c;
-                                        L/=2.0;
+                                    for (int c=0; c<NCG; c++) {
+                                        double L = RCG[c];
                                         //if (dr_inherent < L) {
                                         double w_inherent = exp(-dr_inherent/L);
+                                        if (c== 0) if(i==jloc) w_inherent = 1.0; else w_inherent = 0.0;
                                         for (int type=0; type<NTYPE; type++) {
                                             if (type==type_data[jloc+s*N]) {
                                                 mean_den_inherent[type*NCG+c] += w_inherent;
@@ -257,11 +257,10 @@ void eval_den_cg_ml(){
                     dr_inherent = sqrt(dr_inherent);
 
                     if (dr_inherent < rc) {
-                        for (int c=1; c<NCG; c++) {
-                            double L = c;
-                            L/=2.0;
-                            //if (dr_inherent < L) {
+                        for (int c=0; c<NCG; c++) {
+                            double L = RCG[c];
                             double w_inherent = exp(-dr_inherent/L);
+                            if (c== 0) if(i==j) w_inherent = 1.0; else w_inherent = 0.0;
                             for (int type=0; type<NTYPE; type++) {
                                 if (type==type_data[j+s*N]) {
                                     mean_den_inherent[type*NCG+c] += w_inherent;
@@ -278,11 +277,14 @@ void eval_den_cg_ml(){
             }
 
             //std::cout << mean_epot[0]/mean_den[0] << " " << mean_epot[1]/mean_den[1] << " " << mean_epot[2]/mean_den[2] << " " << mean_epot[3]/mean_den[3] << std::endl;
-            for (int type=0; type<(NTYPE+1); type++) struct_local_ml[type*NCG][i+s*N] = 0.0;
-            for (int c=1; c<NCG; c++) {
+            // special case L=0: set density to 1 or 0, depending on type
+            //for (int type=0; type<(NTYPE+1); type++) if (type==type_data[i+s*N] || type==NTYPE) struct_local_ml[type*NCG][i+s*N] = 1.0; else struct_local_ml[type*NCG][i+s*N] = 0.0;
+            // set rest to 
+            //for (int type=0; type<(NTYPE+1); type++) for (int k=0; k<Ndes; k++) struct_local_ml[(NTYPE+1)*NCG+type*NCG+k*(NTYPE+1)*NCG][i+s*N] = mean_rest[type*NCG+k*(NTYPE+1)*NCG];
+            for (int c=0; c<NCG; c++) {
                 for (int type=0; type<(NTYPE+1); type++) {
                     struct_local_ml[type*NCG+c][i+s*N] = mean_den_inherent[type*NCG+c];
-                    for (int k=0; k<Ndes; k++)  struct_local_ml[(NTYPE+1)*NCG+type*NCG+k*(NTYPE+1)*NCG+c][i+s*N] = mean_rest[type*NCG+k*(NTYPE+1)*NCG+c]/mean_den_inherent[type*NCG+c];
+                    for (int k=0; k<Ndes; k++)  if(mean_den_inherent[type*NCG+c] > 0) struct_local_ml[(NTYPE+1)*NCG+type*NCG+k*(NTYPE+1)*NCG+c][i+s*N] = mean_rest[type*NCG+k*(NTYPE+1)*NCG+c]/mean_den_inherent[type*NCG+c];
                 }
             }
 
@@ -338,8 +340,7 @@ void write_descriptors_csv(){
                                 if (dr_inherent < rc) {
 
                                     for (int c=1; c<NCG; c++) {
-                                        double L = c;
-                                        L/=2.0;
+                                        double L = RCG[c];
                                         double w_inherent = exp(-dr_inherent/L);
                                         for (int type=0; type<NTYPE; type++) {
                                             if (type==type_data[jloc+s*N]) {
@@ -374,8 +375,7 @@ void write_descriptors_csv(){
                     if (dr_inherent < rc) {
 
                         for (int c=1; c<NCG; c++) {
-                            double L = c;
-                            L/=2.0;
+                            double L = RCG[c];
                             double w_inherent = exp(-dr_inherent/L);
                             for (int type=0; type<NTYPE; type++) {
                                 if (type==type_data[j+s*N]) {
@@ -474,7 +474,7 @@ void write_descriptors_csv(){
 
         // length scale
         for (int k=0; k<(Ndes+2)*(NTYPE+1)*NCG; k++) {
-            outPred2 << (k % NCG)/2.0 << ",";
+            outPred2 << RCG[(k % NCG)] << ",";
         }
         for (int d=0; d<NDim; d++) outPred2 << "0.0" << ",";
         outPred2 << "0.0\n";
@@ -501,6 +501,17 @@ void write_descriptors_csv(){
         }
         outfilePred2.close();
     }
+
+     /*   QString pathOrig = QString::fromStdString(folderOut);
+    QString pathPred3 = pathOrig;
+    pathPred3.append("ml_base.dat");
+    QFile outfilePred3(pathPred3);   // input file with xyz
+    outfilePred3.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream outPred3(&outfilePred3);
+
+    for (int i=0; i<N*NS; i++) {
+        outPred3 << i << " " << struct_local_ml[(NTYPE+1)*NCG][i] << " " << struct_local_ml[(2*(NTYPE+1))*NCG][i] << "\n";
+    }*/
     
 }
 
@@ -617,6 +628,69 @@ void write_descriptors_csv_dyn(){
         }
     }
 
+    #ifdef EQUIBB
+        // read file
+        std::cout << "EVAL STRUCT FILION: READ DESCRIPTORS " << std::endl; 
+        const QRegExp rxString(QLatin1String("[^A-Za-z0-9./_-]+"));
+        QString path = QString::fromStdString(folderOut);
+        path.append("equi.in");
+        QFile infile(path);   
+        infile.open(QIODevice::ReadOnly | QIODevice::Text);
+        QTextStream infileStream(&infile);
+
+        equiBB = dvector(0,40);
+
+        // read values of equiBB steps
+        while (!infileStream.atEnd()){
+            QString line = infileStream.readLine();
+            const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
+            equiBB[Nequi] = parts[0].toDouble();
+            Nequi++;
+        }
+        double ** dyn_avg_equi = dmatrix(0,N*NS-1,0,Nequi-1); 
+
+        // find times for equiBB steps
+        double * equiBB_times = dvector(0,Nequi*NTYPE);
+        for (int t=0; t<Nequi*NTYPE; t++) {
+            equiBB_times[t] = -1.0;
+        }
+
+        int k=bb_flag;
+        for (int equi=0; equi< Nequi; equi++) {
+            for (int type=0; type< NTYPE; type++) {
+                for (int t=1; t<NT; t++) {
+                    double val = dyn_pred[t+NT*k][5*type];
+                    if(val < equiBB[equi] && equiBB_times[equi*NTYPE+type] < 0.0 ) {
+                        equiBB_times[equi*NTYPE+type] = t - 1  + (dyn_pred[t-1+NT*k][5*type] -  equiBB[equi] )/(dyn_pred[t-1+NT*k][5*type] - val);
+                        //printf("%d %f %d %f %f %f\n",t-1,equiBB_times[equi*NTYPE+type],t,dyn_pred[t-1+NT*k][5*type],equiBB[equi],val);
+                        break;
+                    }
+                }
+            }
+            //printf("%f %f\n",equiBB[equi],equiBB_times[equi*NTYPE]);
+        }
+
+        // calculate equiBB for each particle
+        //double avg = 0.0;
+        for (int equi=0; equi< Nequi; equi++) {
+            for (int i=0; i<N*NS;i++) {
+                int type = type_data[i];
+                double val = equiBB_times[equi*NTYPE+type];
+                int t = (int) val;
+                double fac = val - t;
+                dyn_avg_equi[i][equi]= dyn_avg_save_cg[i][k*(NT+1) + t] + fac*(dyn_avg_save_cg[i][k*(NT+1) + t + 1]-dyn_avg_save_cg[i][k*(NT+1) + t ]);
+                //if (equi==5 && type==0) avg += dyn_avg_equi[i][equi];
+            }
+        }
+
+        //double val = equiBB_times[5*NTYPE];
+        //int t = (int) val;
+        //double fac = val - t;
+        //printf("%d %f %f %f\n",t,fac,dyn_pred[t+NT*k][0],dyn_pred[t-1+NT*k][0]);
+        //printf("avg %f %f\n",avg/(NS*NPerType[0]), dyn_pred[t+NT*k][0] + fac*(  dyn_pred[t+1+NT*k][0] - dyn_pred[t+NT*k][0]  )    );
+
+    #else
+
     // normalize physical structural descriptors to have mean zero and unit variance
     double ** dyn_mean_var; 
     dyn_mean_var = dmatrix(0,(NT+1)*NDynTotal*NCG_DYN-1,0,2*(NTYPE)-1);
@@ -644,6 +718,8 @@ void write_descriptors_csv_dyn(){
         }
     }
 
+    #endif
+
     for (int type=0; type<NTYPE; type++) {
         QString pathOrig = QString::fromStdString(folderOut);
         QString pathPred = pathOrig;
@@ -652,8 +728,25 @@ void write_descriptors_csv_dyn(){
         QFile outfilePred(pathPred);   // input file with xyz
         outfilePred.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream outPred(&outfilePred);
+
+#ifdef EQUIBB
+
+    for (int equi=0; equi< Nequi; equi++) outPred << "BB" << QString::number(equiBB[equi])   <<  ",";
+    outPred << "\n";
+
+    for (int i=0; i<N*NS; i++) {
+        if (type_data[i] == type) {
+            for (int equi=0; equi< Nequi; equi++) {
+                outPred << dyn_avg_equi[i][equi] << ",";
+            }
+            outPred << "\n";
+        }
+    }
+#else
+
         //write header
-        for (int k=0; k<NDynTotal; k++) for (int t=1; t<=NT; t++) for (int c=0; c<NCG_DYN; c++) outPred << QString::fromStdString(DynNames[k]) << "CG" << c << "T" << t <<  ",";
+        if (NCG_DYN>1) for (int k=0; k<NDynTotal; k++) for (int t=1; t<=NT; t++) for (int c=0; c<NCG_DYN; c++) outPred << QString::fromStdString(DynNames[k]) << "CG" << c << "T" << t <<  ",";
+        else for (int k=0; k<NDynTotal; k++) for (int t=1; t<=NT; t++) outPred << QString::fromStdString(DynNames[k])  << t <<  ",";
         outPred << "\n";
 
         // mean and variance
@@ -676,6 +769,7 @@ void write_descriptors_csv_dyn(){
 
             }
         }
+#endif
         outfilePred.close();
     }
     
@@ -695,10 +789,13 @@ void create_cell_lists(){
   }
   
   // find cell lists for particles
+  int counterror=0;
   for (int s=0; s<NS; s++) {
     for (int i=0; i<N; i++) {
         int xint = (int) ( Ncell* (xyz_inherent_data[i+s*N][0]/boxL + 0.5) );
         int yint = (int) ( Ncell* (xyz_inherent_data[i+s*N][1]/boxL + 0.5) );
+
+        printf("cell %d %d %f %f\n",xint,yint,xyz_inherent_data[i+s*N][0],xyz_inherent_data[i+s*N][1]);
 
         if (xint == Ncell) xint = Ncell -1;
         if (yint == Ncell) yint = Ncell -1;
@@ -713,7 +810,10 @@ void create_cell_lists(){
                 //printf("%d\n",j);
                 break;
             }
-            if (j==Nmax-1) printf("Increase NMax for neighbor list!\n");
+            if (j==Nmax-1 && counterror < 5) {
+                printf("Increase NMax for neighbor list! Nmax %d\n",Nmax);
+                counterror++;
+            }
         }
     }
   }

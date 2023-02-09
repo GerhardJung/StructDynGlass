@@ -36,6 +36,9 @@ void eval_isf(){
     // write results
     print_traj(save_bb_traj, flag);
 
+    // calculate and write R file
+    print_R(save_bb_traj, flag);
+
     // write results
     print_isoconf(isf_flag);
 }
