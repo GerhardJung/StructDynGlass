@@ -618,6 +618,7 @@ void print_traj(double * save_dyn, int flag){
 
 void print_R(double * save_dyn,int flag){
 
+    QString pathOrig = QString::fromStdString(folderOut);
     double * Cg_avg = new double [NT*NTYPE];
     double * Cg_iso2 = new double [NT*NTYPE];
     double * Cg2_iso = new double [NT*NTYPE];
@@ -625,16 +626,16 @@ void print_R(double * save_dyn,int flag){
     double * chi4 = new double [NT*NTYPE];
     double * R4 = new double [NT*NTYPE];
 
-    QString pathOrig = QString::fromStdString(folderOut);
-    QString pathPred2 = pathOrig;
+    
+    /*QString pathPred2 = pathOrig;
     pathPred2.append(QString("isoconf_trajectories.dat"));
     QFile outfilePred2(pathPred2);   // input file with xyz
     outfilePred2.open(QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream outPred2(&outfilePred2);
+    QTextStream outPred2(&outfilePred2);*/
 
     for (int type=0; type<NTYPE; type++) {
         for (int t=1; t<NT; t++) {
-            if (type==0) outPred2 << time_data[t]*timestep << " ";
+            //if (type==0) outPred2 << time_data[t]*timestep << " ";
             Cg_avg[t+NT*type] = 0.0;
             Cg_iso2[t+NT*type] = 0.0;
             Cg2_iso[t+NT*type] = 0.0;
@@ -649,11 +650,12 @@ void print_R(double * save_dyn,int flag){
                         if(type_data[i+s*N] == type) Cg += save_dyn[s*NT*NI*N+t*N*NI+j*N+i];
                     }
                     Cg /= (double) NPerType[type];
-                    if (type==0) outPred2 << Cg << " ";
+                    //if (type==0) outPred2 << Cg << " ";
                     Cg_iso2_loc += Cg;
                     Cg_avg[t+NT*type] += Cg;
                     Cg2_iso[t+NT*type] += Cg*Cg;
                 }
+                //if (type==0) outPred2 << Cg_iso2_loc / ( (double) NI ) << " ";
                 Cg_iso2[t+NT*type] += Cg_iso2_loc*Cg_iso2_loc / ( (double) NI*NI );
             }
             Cg_iso2[t+NT*type] /= (double) NS;
@@ -661,12 +663,12 @@ void print_R(double * save_dyn,int flag){
             Cg2_iso[t+NT*type] /= (double) NS*NI;
             chi4[t+NT*type] = NPerType[type]*(Cg2_iso[t+NT*type] - Cg_avg[t+NT*type]*Cg_avg[t+NT*type]);
             chi4_iso[t+NT*type] = NPerType[type]*(Cg_iso2[t+NT*type] - Cg_avg[t+NT*type]*Cg_avg[t+NT*type]);
-            if (t==36) printf("BB/chi4/var/mean %f %f %f %f\n",Cg_avg[t+NT*type],chi4_iso[t+NT*type],Cg_iso2[t+NT*type]*NPerType[type]*NPerType[type], Cg_avg[t+NT*type]*NPerType[type] );
+            //if (t==36) printf("BB/chi4/var/mean %f %f %f %f\n",Cg_avg[t+NT*type],chi4_iso[t+NT*type],Cg_iso2[t+NT*type]*NPerType[type]*NPerType[type], Cg_avg[t+NT*type]*NPerType[type] );
             R4[t+NT*type] = chi4_iso[t+NT*type] / chi4[t+NT*type];
-            if (type==0) outPred2 << "\n";
+            //if (type==0) outPred2 << "\n";
         }
     }
-    outfilePred2.close();
+    //outfilePred2.close();
 
     // print R factor
     QString pathPred = pathOrig;

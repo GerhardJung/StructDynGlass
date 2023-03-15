@@ -204,17 +204,22 @@ void eval_struct(double * input_tensor,std::string input_name, int first){
 
     // g_4
     std::cout << "EVAL STRUCT READ: G4 " << std::endl; 
-		int		NBin = 500;
-		double		DeltaBin = 0.04;
-		double G4[NBin]={};   	
+		int		NBin = 250;
+		double		DeltaBin = 0.08;
+		double G4[NBin]={};  
+    int G4_count[NBin]={};  	
 		double sum_pred=0.0;
+    double fluct = 0.0;
 
     // calculate constants for cell list calculation
     if (struct_ml_flag<0 && (first==1) ) {
       rc = NBin*DeltaBin;
       Ncell = (int) boxL/rc;
+      if (Ncell < 3) {
+        Ncell = 3;
+      }
       Nmax = 800;
-      printf("cell Ncell %d\n",Ncell);
+      //printf("cell Ncell %d\n",Ncell);
       cell_list_index = imatrix(0,NS-1,0,N-1);
       cell_list = imatrix(0,NS*Ncell*Ncell-1,0,Nmax-1);
       create_cell_lists();
@@ -226,6 +231,7 @@ void eval_struct(double * input_tensor,std::string input_name, int first){
 				// calc distances
         for (int i=0; i<N;i++) { // loop over particles
             if (type_data[i+s*N]==0) {
+              fluct += (input_tensor[i+s*N])*(input_tensor[i+s*N]);
 
               int cell_list_indexi = cell_list_index[s][i];
               int cell_list_y  = cell_list_indexi % Ncell;
@@ -258,6 +264,7 @@ void eval_struct(double * input_tensor,std::string input_name, int first){
                                 if (bin < NBin) {
                                   G4[bin] += (input_tensor[i+s*N])*(input_tensor[jloc+s*N]);
                                   //G4[bin] += 1.0;
+                                  G4_count[bin] += 1;
                                 }
 
                               }
@@ -275,6 +282,7 @@ void eval_struct(double * input_tensor,std::string input_name, int first){
     }
 
 		double NsAvg_pred = sum_pred/((double)NS);
+    fluct /= (double) NS * NPerType[0]; 
 
     printf("%f\n",NsAvg_pred);
 
@@ -289,7 +297,7 @@ void eval_struct(double * input_tensor,std::string input_name, int first){
 		for (int bin=0; bin<NBin;bin++) {
       //double scale_pred = boxL*boxL/(NS*3.1415926*((double) (DeltaBin*DeltaBin)*(2*bin+1)))/(NsAvg_pred*(NsAvg_pred-1.0));
       double scale_pred = boxL*boxL/(NS*3.1415926*((double) (DeltaBin*DeltaBin)*(2*bin+1)));
-      outPred4 <<  bin*DeltaBin << " " << G4[bin]*scale_pred << " " << G4[bin];
+      outPred4 <<  bin*DeltaBin << " " << G4[bin]*scale_pred << " " << G4[bin] << " " << G4[bin]/G4_count[bin] << " " << G4[bin]/G4_count[bin]/fluct;
       outPred4 << "\n";
     }
     outfilePred4.close();

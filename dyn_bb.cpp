@@ -10,14 +10,6 @@ void eval_bb(){
 
     int flag = bb_flag;
 
-    printf("385 (t=0) %f/%f, 385 (t=0.03) %f/%f,993 (t=0) %f/%f, 993 (t=0.03) %f/%f \n",xyz_data[385][0+0*NDim+NDim*NT*7],\
-    xyz_data[385][1+0*NDim+NDim*NT*7],xyz_data[385][0+3*NDim+NDim*NT*7],xyz_data[385][1+3*NDim+NDim*NT*7],xyz_data[993][0+0*NDim+NDim*NT*7],\
-    xyz_data[993][1+0*NDim+NDim*NT*7],xyz_data[993][0+3*NDim+NDim*NT*7],xyz_data[993][1+3*NDim+NDim*NT*7]);
-
-    printf(" (t=0) %f, (t=0.03) %f\n",sqrt((xyz_data[385][0+0*NDim+NDim*NT*7]-xyz_data[993][0+0*NDim+NDim*NT*7])*(xyz_data[385][0+0*NDim+NDim*NT*7]-xyz_data[993][0+0*NDim+NDim*NT*7])+(xyz_data[385][1+0*NDim+NDim*NT*7]-xyz_data[993][1+0*NDim+NDim*NT*7])*(xyz_data[385][1+0*NDim+NDim*NT*7]-xyz_data[993][1+0*NDim+NDim*NT*7])),\
-    sqrt((xyz_data[385][0+3*NDim+NDim*NT*7]-xyz_data[993][0+3*NDim+NDim*NT*7])*(xyz_data[385][0+3*NDim+NDim*NT*7]-xyz_data[993][0+3*NDim+NDim*NT*7])+(xyz_data[385][1+3*NDim+NDim*NT*7]-xyz_data[993][1+3*NDim+NDim*NT*7])*(xyz_data[385][1+3*NDim+NDim*NT*7]-xyz_data[993][1+3*NDim+NDim*NT*7]))
-    );
-
     double * save_bb_traj = new double [NS*NT*NI*N];
     int ** neighbors = imatrix(0,NS*N-1,0,N_NEIGH_MAX-1);
     for (int s=0; s<NS;s++) { // loop over structures
@@ -46,9 +38,8 @@ void eval_bb(){
                     // add to probability distribution and averages
                     double C_loc= nt/((double) n0);
                     add_histogram_avg(s,i,j,dyn_ranges[flag],C_loc);
-                    if (t==1 && C_loc <1) std::cout << s << " "<< i << " " << C_loc << std::endl;
                     save_bb_traj[s*NT*NI*N+t*N*NI+j*N+i] =C_loc;
-                    //if (t==3 && C_loc < 1) printf("%d %d %f\n", i,j,C_loc); 
+                    //if (t==9 && C_loc < 1 ) printf("%d %d %d %f\n", s, i,j,C_loc); 
                     
                 }
             }
@@ -91,7 +82,8 @@ void eval_bb(){
     }
 
     // just S and G
-    if (boxL > 100.0 && !noinherent) {
+    if (boxL > 100.0 && !noinherent) 
+    {
         double tmp[N*NS];
         for (int s=0; s<NS; s++) {
             for (int i=0; i<N; i++) {
@@ -103,11 +95,18 @@ void eval_bb(){
         eval_struct(tmp,tmps,first);
 
         // calc S4, G4
-        for (int t=35; t<37; t++) {
+        for (int t=35; t<NT; t++) {
             first = 0;
 
+            double mean = 0.0;
             for (int i=0; i<N*NS; i++) {
-                tmp[i] = dyn_avg_save[i][flag*(NT+1)+t];
+                if (type_data[i]==0) {
+                    mean += dyn_avg_save[i][flag*(NT+1)+t];
+                }
+            }
+            mean /= (double) NPerType[0]*NS;
+            for (int i=0; i<N*NS; i++) {
+                if (type_data[i]==0) tmp[i] = dyn_avg_save[i][flag*(NT+1)+t] - mean;
             }
             tmps = "BB"+std::to_string(t);
             
@@ -154,17 +153,18 @@ void findneighbors(double rcut2, int ** neighbors) {
                     dr += dx*dx;
                 }
 
-                double sigma = determine_sigma(i,j);
+                double sigma = determine_sigma(i+s*N,j+s*N);
                 //double sigma = 1.0;
 
                 if (dr < rcut2*sigma*sigma && i != j ) {
-                    if (i==385) printf("%d %f %f\n",j,sqrt(dr),sigma);
+                    //if (i==385) printf("%d %f %f\n",j,sqrt(dr),sigma);
                     neighbors[i+s*N][ncount] = j;
                     ncount ++;
+
                     if (ncount == N_NEIGH_MAX) printf("ERROR: Increase NMax for neighbor list! (BB)");
                 }
             }
-            //if (s==0 && i == 264) std::cout << rcut2 << std::endl;
+           
         }
     }
 }
@@ -182,7 +182,7 @@ void checkneighbors(int s, int i, int j, int t, int &n0, int &nt, int ** neighbo
             dr += dx*dx;
         }
 
-        double sigma = determine_sigma(i,neighbors[i+s*N][n0]);
+        double sigma = determine_sigma(i+s*N,neighbors[i+s*N][n0]+s*N);
         //double sigma = 1.0;
 
         if (dr < rcuto2*sigma*sigma) {

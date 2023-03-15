@@ -18,12 +18,12 @@
 #define EPS 0.000000001
 #define NDim 2
 //#define USE_RELATIVE  
-//#define EQUIBB     
+#define EQUIBB     
 
 // OPTIONS
 extern std::string lammpsIn;       // lammps xyz output folder for readin
 extern std::string folderOut; // folder to output isoconfigurational data
-extern int CnfStart, CnfStep;      // to open output files
+extern long CnfStart, CnfStep;      // to open output files
 extern double timestep;            // size of the timestep
 extern int NS;                     // number of different inital structures
 extern int NI;                     // number of different isoconfigurational trajectories

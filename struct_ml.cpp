@@ -63,15 +63,15 @@ void eval_struct_ml(){
                             //printf("%d %d\n",j,jloc);
                             if (jloc != -1 && jloc != i) {
                             
-                                double dr_inh=0.0, dx_inh[NDim];
+                               double dr_inherent=0.0, dx_inherent;
                                 for (int d=0; d<NDim;d++) {
-                                    dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[jloc+s*N][d];
-                                    apply_pbc(dx_inh[d]);
-                                    dr_inh += dx_inh[d]*dx_inh[d];
+                                    dx_inherent = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[jloc+s*N][d];
+                                    apply_pbc(dx_inherent);
+                                    dr_inherent += dx_inherent*dx_inherent;
                                 }
                                 
                                 // calculate epot
-                                if (dr_inh < RC2LJ) struct_local_ml[(NTYPE+1)*NCG][i+s*N] += 0.5*calc_epot(i+s*N, jloc+s*N, dr_inh);
+                                if (dr_inherent < RC2LJ) struct_local_ml[(NTYPE+1)*NCG][i+s*N] += 0.5*calc_epot(i+s*N, jloc+s*N, dr_inherent);
                             
                             }
                         }
@@ -82,16 +82,15 @@ void eval_struct_ml(){
                 for (int j=0; j<N;j++) { // loop over particle pairs
                     if (j!=i) {
                         jType = type_data[j+s*N];
-                        double dr=0.0, dx[NDim];
-                        double dr_inh=0.0, dx_inh[NDim];
+                        double dr_inherent=0.0, dx_inherent;
                         for (int d=0; d<NDim;d++) {
-                            dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
-                            apply_pbc(dx_inh[d]);
-                            dr_inh += dx_inh[d]*dx_inh[d];
+                            dx_inherent = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[j+s*N][d];
+                            apply_pbc(dx_inherent);
+                            dr_inherent += dx_inherent*dx_inherent;
                         }
                         
                         // calculate epot
-                        if (dr_inh < RC2LJ) struct_local_ml[(NTYPE+1)*NCG][i+s*N] += 0.5*calc_epot(i+s*N, j+s*N, dr_inh);
+                        if (dr_inherent < RC2LJ) struct_local_ml[(NTYPE+1)*NCG][i+s*N] += 0.5*calc_epot(i+s*N, j+s*N, dr_inherent);
 
                     } 
                 }
@@ -215,13 +214,13 @@ void eval_den_cg_ml(){
                             //printf("%d %d\n",j,jloc);
                             if (jloc != -1) {
                             
-                                double dr_inh=0.0, dx_inh[NDim];
+                                double dr_inherent=0.0, dx_inherent;
                                 for (int d=0; d<NDim;d++) {
-                                    dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[jloc+s*N][d];
-                                    apply_pbc(dx_inh[d]);
-                                    dr_inh += dx_inh[d]*dx_inh[d];
+                                    dx_inherent = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[jloc+s*N][d];
+                                    apply_pbc(dx_inherent);
+                                    dr_inherent += dx_inherent*dx_inherent;
                                 }
-                                double dr_inherent = sqrt(dr_inh);
+                                dr_inherent = sqrt(dr_inherent);
 
                                 if (dr_inherent < rc) {
 
@@ -329,13 +328,13 @@ void write_descriptors_csv(){
                             //printf("%d %d\n",j,jloc);
                             if (jloc != -1) {
                             
-                                double dr_inh=0.0, dx_inh[NDim];
+                                double dr_inherent=0.0, dx_inherent;
                                 for (int d=0; d<NDim;d++) {
-                                    dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[jloc+s*N][d];
-                                    apply_pbc(dx_inh[d]);
-                                    dr_inh += dx_inh[d]*dx_inh[d];
+                                    dx_inherent = xyz_inherent_data[i+s*N][d] - xyz_inherent_data[jloc+s*N][d];
+                                    apply_pbc(dx_inherent);
+                                    dr_inherent += dx_inherent*dx_inherent;
                                 }
-                                double dr_inherent = sqrt(dr_inh);
+                                dr_inherent = sqrt(dr_inherent);
 
                                 if (dr_inherent < rc) {
 
@@ -792,10 +791,11 @@ void create_cell_lists(){
   int counterror=0;
   for (int s=0; s<NS; s++) {
     for (int i=0; i<N; i++) {
-        int xint = (int) ( Ncell* (xyz_inherent_data[i+s*N][0]/boxL + 0.5) );
-        int yint = (int) ( Ncell* (xyz_inherent_data[i+s*N][1]/boxL + 0.5) );
+        // make inherent back for ml (?)
+        int xint = (int) ( Ncell* (xyz_data[i+s*N][0]/boxL + 0.5) );
+        int yint = (int) ( Ncell* (xyz_data[i+s*N][1]/boxL + 0.5) );
 
-        printf("cell %d %d %f %f\n",xint,yint,xyz_inherent_data[i+s*N][0],xyz_inherent_data[i+s*N][1]);
+        //printf("cell %d %d %f %f\n",xint,yint,xyz_inherent_data[i+s*N][0],xyz_inherent_data[i+s*N][1]);
 
         if (xint == Ncell) xint = Ncell -1;
         if (yint == Ncell) yint = Ncell -1;

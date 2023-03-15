@@ -3,7 +3,7 @@
 //OPTIONS
 std::string lammpsIn;       // lammps xyz output folder for readin
 std::string folderOut;         // folder to output isoconfigurational data
-int CnfStart, CnfStep;      // values to open output files
+long CnfStart, CnfStep;      // values to open output files
 double timestep;
 int NS;                     // number of different inital structures
 int NI;                     // number of different isoconfigurational trajectories
@@ -130,7 +130,7 @@ void allocate_storage(){
     dia_data = dvector(0,N*NS-1);
     NPerType = ivector(0,NTYPE-1);
     xyz_data = dmatrix(0,N*NS-1,0,NI*NT*NDim-1);
-    xyz_inherent_data = dmatrix(0,N*NS-1,0,NI*NT*NDim-1);
+    if (!noinherent) xyz_inherent_data = dmatrix(0,N*NS-1,0,NI*NT*NDim-1);
     time_data = ivector(0,NT-1);
 
     global_properties = dvector(0,NTYPE*5-1);
@@ -176,7 +176,7 @@ void allocate_storage(){
         type_data[i] = 0;
         for (int j = 0; j < NI*NT*NDim; j++) {
             xyz_data[i][j] = 0.0;
-            xyz_inherent_data[i][j] = 0.0;
+            if (!noinherent) xyz_inherent_data[i][j] = 0.0;
         }
     }
 
