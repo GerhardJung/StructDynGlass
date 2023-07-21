@@ -468,7 +468,7 @@ double determine_sigma(int i, int j) {
         if ((iType==2 && jType == 0) || (iType==0 && jType == 2)) return 0.9;
         if ((iType==2 && jType == 1) || (iType==1 && jType == 2)) return 0.8;
     }
-    if (model=="KA2" || model=="KA") {
+    if (model=="KA2" || model=="KA" || model=="KASHIBA") {
         int iType = type_data[i];
         int jType = type_data[j];
         if (iType==0 && jType == 0) return 1.0;
@@ -494,7 +494,7 @@ double determine_epsilon(int iType, int jType) {
         if ((iType==2 && jType == 0) || (iType==0 && jType == 2)) return 0.75;
         if ((iType==2 && jType == 1) || (iType==1 && jType == 2)) return 1.5;
     } 
-    if(model=="KA2" || model=="KA") {
+    if(model=="KA2" || model=="KA" || model=="KASHIBA") {
         if (iType==0 && jType == 0) return 1.0;
         if (iType==1 && jType == 1) return 0.5;
         if (iType==2 && jType == 2) return 0.75;
@@ -529,7 +529,15 @@ double calc_epot(int i, int j, double dist2) {
             double rij12 = rij6*rij6;
             return 4.0*epsilon*(- rij6 + rij12 ) ;
         } 
-    } if(model=="POLY") {
+    } if(model=="KASHIBA") {
+        if (dist2 < RC2LJ*sigma2 ) {
+            double rij2 = dist2/(sigma2);
+            double rij4 = rij2*rij2;
+            double rij6 = 1.0/(rij4*rij2);
+            double rij12 = rij6*rij6;
+            return 4.0*epsilon*(- rij6 + rij12 -c0SHIBA - ( sqrt(dist2)/sigma - 2.5)*c1SHIBA ) ;
+        } 
+    }if(model=="POLY") {
         if (dist2 < RC2POLY*sigma2 ) {
             double rij2 = dist2/(sigma2);
             double rij4 = rij2*rij2;

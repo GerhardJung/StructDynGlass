@@ -37,6 +37,8 @@ void eval_struct_ml(){
         cell_list = imatrix(0,NS*Ncell*Ncell-1,0,Nmax-1);
         create_cell_lists();
     }
+    
+    if (calc_dr == 0) Ndes -= 1;
 
     int iType,jType;
     for (int s=0; s<NS;s++) { // loop over structures
@@ -97,15 +99,16 @@ void eval_struct_ml(){
 
             }
 
-
-                  /*      // calc dist inh states
+                    if (calc_dr==1) {
+                        // calc dist inh states
                         double dr_inh=0.0, dx_inh[NDim];
                         for (int d=0; d<NDim;d++) {
                             dx_inh[d] = xyz_inherent_data[i+s*N][d] - xyz_data[i+s*N][d];
                             apply_pbc(dx_inh[d]);
                             dr_inh += dx_inh[d]*dx_inh[d];
                         }
-                        struct_local_ml[(4*(NTYPE+1))*NCG][i+s*N] = dr_inh;*/
+                        struct_local_ml[(3*(NTYPE+1))*NCG][i+s*N] = dr_inh;
+                    }
 
         }
 
@@ -396,12 +399,14 @@ void write_descriptors_csv(){
             }
 
             for (int type=0; type<(NTYPE+1); type++) {
-                struct_local_ml[3*(NTYPE+1)*NCG+type*NCG][i+s*N] = 0.0;
+                struct_local_ml[4*(NTYPE+1)*NCG+type*NCG][i+s*N] = 0.0;
 
             }
+            int pos = 3;
+            if (calc_dr==1) pos = 4;
             for (int c=1; c<NCG; c++) {
                 for (int type=0; type<(NTYPE+1); type++) {
-                    struct_local_ml[3*(NTYPE+1)*NCG+type*NCG+c][i+s*N] = mean_rest[type*NCG+c]/mean_den_inherent[type*NCG+c];
+                    struct_local_ml[pos*(NTYPE+1)*NCG+type*NCG+c][i+s*N] = mean_rest[type*NCG+c]/mean_den_inherent[type*NCG+c];
                 }
             }
         }
@@ -456,15 +461,19 @@ void write_descriptors_csv(){
         if (NTYPE==3) for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP_TYPE2" << c << ",";
         for (int c=0; c<NCG; c++) outPred2 << "PERI_CGP_ALL" << c << ",";
 
+        if (calc_dr==1) {
+            for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE0" << c << ",";
+            for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE1" << c << ",";
+            if (NTYPE==3) for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE2" << c << ",";
+            for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_ALL" << c << ",";
+        }
+
         for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE0" << c << ",";
         for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE1" << c << ",";
         if (NTYPE==3) for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_TYPE2" << c << ",";
         for (int c=0; c<NCG; c++) outPred2 << "EPOT_VAR2CGP_ALL" << c << ",";
 
-        //for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE0" << c << ",";
-        //for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE1" << c << ",";
-        //if (NTYPE==3) for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_TYPE2" << c << ",";
-        //for (int c=0; c<NCG; c++) outPred2 << "DRINH_CGP_ALL" << c << ",";
+
 
         for (int d=0; d<NDim; d++) outPred2 << "NDim" << d << ",";
         outPred2 << "ID\n";
@@ -501,7 +510,7 @@ void write_descriptors_csv(){
         outfilePred2.close();
     }
 
-     /*   QString pathOrig = QString::fromStdString(folderOut);
+  QString pathOrig = QString::fromStdString(folderOut);
     QString pathPred3 = pathOrig;
     pathPred3.append("ml_base.dat");
     QFile outfilePred3(pathPred3);   // input file with xyz
@@ -510,7 +519,7 @@ void write_descriptors_csv(){
 
     for (int i=0; i<N*NS; i++) {
         outPred3 << i << " " << struct_local_ml[(NTYPE+1)*NCG][i] << " " << struct_local_ml[(2*(NTYPE+1))*NCG][i] << "\n";
-    }*/
+    }
     
 }
 

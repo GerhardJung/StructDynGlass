@@ -13,6 +13,7 @@
 #include "struct_filion.h"  
 #include "struct_voronoi.h"  
 #include "struct_read.h"  
+#include "struct_epot.h" 
 #include "struct_ml.h"
 #include "struct_gnn.h"
 #include "eval_struct.h"
@@ -182,6 +183,7 @@
                 break;
             }
             case 8: {
+                if (NStruct == 0) continue;
                 const auto&& parts = line.split(rxString, QString::SkipEmptyParts);
                 if (parts[0] == "BASE") {
 
@@ -212,8 +214,11 @@
                     struct_filion_file = parts[1].toStdString();
                 } else if (parts[0] == "MLJUNG") {
                     struct_ml_flag = NStructTotal;
+                    if (parts.size() > 1) if (parts[1] == "CALCDR") calc_dr = 1;
                 } else if (parts[0] == "MLGNN") {
                     struct_gnn_flag = NStructTotal;
+                } else if (parts[0] == "EPOT") {
+                    struct_epot_flag = NStructTotal;
                 } else if (parts[0] == "VORONOI") {
                     struct_voronoi_flag = NStructTotal;
                     NStructTotal+=3;
@@ -229,6 +234,7 @@
             }
         }
         line_counter++;
+        //printf("%d\n",line_counter);
         if (line_counter == 7) {
             // jump back if there are still more dyn variables to come
             if (Ndyn_loc < NDyn) line_counter--;
@@ -276,6 +282,7 @@
     if (struct_ml_flag>=0) eval_struct_ml();
     if (struct_read_flag>=0) eval_struct_read();
     if (struct_voronoi_flag>=0) eval_struct_voronoi();
+     if (struct_epot_flag>=0) eval_struct_epot();
 
     // print out extended physical descriptors
     if (struct_base_flag>=0) write_descriptors_csv_phys();

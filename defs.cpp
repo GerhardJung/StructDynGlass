@@ -62,11 +62,14 @@ std::string struct_filion_file;
 double ** struct_filion_descriptor_list;
 
 int struct_ml_flag=-1;
-int Ndes=2;
+int Ndes=3;
+int calc_dr=0;
 
 int struct_gnn_flag=-1;
 
 int struct_voronoi_flag=-1;
+
+int struct_epot_flag=-1;
 
 int struct_read_flag=-1;
 int struct_read_Ntotal=0;
@@ -108,6 +111,9 @@ double **struct_local_ml;
 double **struct_filion_classifiers_thermal;
 double **struct_filion_classifiers_inherent;
 double ** struct_mean_var; 
+
+double c0SHIBA=pow(1.0/2.5,12.0)-pow(1.0/2.5,6.0);
+double c1SHIBA=-12.0*pow(1.0/2.5,13.0)+6.0*pow(1.0/2.5,7.0);
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 double **dyn_ranges;

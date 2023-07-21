@@ -83,10 +83,13 @@ extern double ** struct_filion_descriptor_list;
 
 extern int struct_ml_flag;
 extern int Ndes;
+extern int calc_dr;
 
 extern int struct_gnn_flag;
 
 extern int struct_voronoi_flag;
+
+extern int struct_epot_flag;
 
 extern int struct_read_flag;
 extern int struct_read_Ntotal;
@@ -128,6 +131,9 @@ extern double **struct_filion_classifiers_thermal;
 extern double **struct_filion_classifiers_inherent;
 extern double **struct_local_ml;
 extern double ** struct_mean_var; 
+
+extern double c0SHIBA;
+extern double c1SHIBA;
 
 // DYN STRUCT CORRELATION, HISTOGRAMMS
 extern double **dyn_ranges;
